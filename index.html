@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DocApp</title>
+<meta name="theme-color" content="#1FB5A3">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: columna única de teléfono (máx. 480px), encabezado fijo con filtro por persona, barra de pestañas abajo, formularios en hojas que suben desde abajo. */
+:root{
+  --bg:#EEF4F3; --surface:#FFFFFF; --surface-2:#E3ECEA; --ink:#102E2A; --muted:#58706C; --line:#D2DFDC;
+  --accent:#0C8A7B; --accent-soft:#D6F0EC; --on-accent:#FFFFFF; --brand:#1FB5A3;
+  --ok:#1E8A4C; --ok-soft:#DDF2E4; --warn:#A8650A; --warn-soft:#FBEBCF; --danger:#BC3B33; --danger-soft:#FADFDC;
+  --p-blue:#3466C9; --p-pink:#C9487A; --p-amber:#B97A12; --p-violet:#7A55C7; --p-green:#3B8F4F;
+  --font-display:"Bricolage Grotesque","Figtree",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:14px; --shadow:0 1px 2px rgba(16,46,42,.06),0 6px 18px rgba(16,46,42,.06);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1716; --surface:#152321; --surface-2:#1D2F2C; --ink:#E6F2EF; --muted:#93ABA6; --line:#29403C;
+  --accent:#3CCBB8; --accent-soft:#12403A; --on-accent:#06211D; --brand:#1FB5A3;
+  --ok:#5BD08A; --ok-soft:#143524; --warn:#F0B354; --warn-soft:#3D2C0C; --danger:#F2857D; --danger-soft:#41201D;
+  --p-blue:#7FA5F2; --p-pink:#EE86AD; --p-amber:#E5B052; --p-violet:#B097EE; --p-green:#78C98A;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0C1716; --surface:#152321; --surface-2:#1D2F2C; --ink:#E6F2EF; --muted:#93ABA6; --line:#29403C;
+  --accent:#3CCBB8; --accent-soft:#12403A; --on-accent:#06211D; --brand:#1FB5A3;
+  --ok:#5BD08A; --ok-soft:#143524; --warn:#F0B354; --warn-soft:#3D2C0C; --danger:#F2857D; --danger-soft:#41201D;
+  --p-blue:#7FA5F2; --p-pink:#EE86AD; --p-amber:#E5B052; --p-violet:#B097EE; --p-green:#78C98A;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:0 104px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;margin-inline:-16px;padding-inline:16px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:34px;height:34px;flex:none}
+.brand h1{font-family:var(--font-display);font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+.brand .me{margin-left:auto;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.chips{display:flex;gap:8px;margin-top:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chip{flex:none;display:flex;align-items:center;gap:6px;padding:6px 12px 6px 6px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:600;font-size:13.5px}
+.chip.all{padding-left:12px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.av{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;font-weight:700;color:var(--surface);background:var(--c,var(--muted));flex:none}
+.av.lg{width:40px;height:40px;font-size:16px}
+main{display:flex;flex-direction:column;gap:18px;padding-top:16px}
+h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-wrap:balance}
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.label{font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.count{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sum{background:var(--surface);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+.sum .big{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1.1}
+.sum .sub{color:var(--muted);font-size:13.5px}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--brand);border-radius:99px}
+.list{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:12px 14px;width:100%;text-align:left;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .time{flex:none;width:46px;font-variant-numeric:tabular-nums;font-weight:700;font-size:15px}
+.row .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.row .t1{font-weight:600;overflow-wrap:anywhere}
+.row .t2{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.who{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:var(--c)}
+.who::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.tick{flex:none;width:36px;height:36px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:transparent}
+.tick svg{width:18px;height:18px}
+.row.late .time{color:var(--danger)} .row.late .tick{border-color:var(--danger)}
+.row.done .tick{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.row.done .t1{color:var(--muted)}
+.row.skip .tick{background:var(--surface-2);border-color:var(--surface-2);color:var(--muted)}
+.pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--surface-2);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.soon{background:var(--warn-soft);color:var(--warn)}
+.pill.late{background:var(--danger-soft);color:var(--danger)} .pill.load{background:var(--accent-soft);color:var(--accent)}
+.tag{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--line);border-radius:5px;padding:0 5px}
+.note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);color:var(--warn);border-radius:var(--r);padding:10px 14px;font-size:13.5px;font-weight:500}
+.note.info{background:var(--accent-soft);color:var(--accent)}
+.note button{margin-left:auto;flex:none;font-weight:700;text-decoration:underline}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:3px;text-align:left;min-width:0}
+.mini b{font-size:14.5px;overflow-wrap:anywhere}
+.mini span{font-size:13px;color:var(--muted)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:11px;padding:3px}
+.seg button{padding:8px;border-radius:9px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:12px;font-weight:700;background:var(--accent);color:var(--on-accent);width:100%}
+.btn.ghost{background:var(--surface-2);color:var(--ink)}
+.btn.danger{background:var(--danger-soft);color:var(--danger)}
+.btn.sm{width:auto;padding:7px 12px;font-size:13.5px;border-radius:10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.empty{padding:22px 16px;text-align:center;color:var(--muted);font-size:14px}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 9px;font-size:11px;font-weight:600;color:var(--muted)}
+.nav svg{width:22px;height:22px}
+.nav button[aria-current="page"]{color:var(--accent)}
+.fab{position:fixed;z-index:6;right:max(16px,calc(50% - 224px));bottom:calc(72px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:18px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 35%,transparent)}
+.fab svg{width:26px;height:26px}
+.scrim{position:fixed;inset:0;z-index:10;background:rgba(6,20,18,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:480px;max-height:92%;overflow-y:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheet-h{display:flex;align-items:flex-start;gap:10px}
+.sheet-h h2{flex:1}
+.x{width:32px;height:32px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;flex:none}
+.x svg{width:16px;height:16px}
+.gear{width:34px;height:34px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;flex:none;color:var(--muted)}
+.gear svg{width:19px;height:19px}
+.gear[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pre{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;white-space:pre-wrap;font-size:14px;overflow-wrap:anywhere}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f>span{font-size:12.5px;font-weight:700;color:var(--muted)}
+.f input,.f select,.f textarea{width:100%;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.f textarea{min-height:64px;resize:vertical}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;text-align:left;width:100%}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.opt b{display:block} .opt small{color:var(--muted);font-size:13px}
+.opt .dot{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);margin-top:2px}
+.opt[aria-pressed="true"] .dot{border-color:var(--accent);background:radial-gradient(var(--accent) 45%,transparent 50%)}
+.stack{display:flex;flex-direction:column;gap:8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;font-weight:600;overflow-wrap:anywhere}
+.photo{max-height:160px;border-radius:10px;border:1px solid var(--line)}
+.toast{position:fixed;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:99px;font-weight:600;font-size:13.5px;max-width:90%}
+.err{color:var(--danger);font-size:13px;font-weight:600}
+.foot{font-size:12.5px;color:var(--muted);text-align:center}
+.foot a{color:var(--accent)}
+.brand h1 span{color:var(--accent)}
+:root[data-accent="blue"]{--accent:light-dark(#2F62C9,#86ABF5);--accent-soft:light-dark(#DDE7FA,#1A2C52);--brand:#4C7FE6;--on-accent:light-dark(#FFFFFF,#0B1424)}
+:root[data-accent="violet"]{--accent:light-dark(#7046C4,#B49BF0);--accent-soft:light-dark(#E9E1F8,#2E2350);--brand:#8B63DB;--on-accent:light-dark(#FFFFFF,#150E28)}
+:root[data-accent="coral"]{--accent:light-dark(#C2473A,#F28C80);--accent-soft:light-dark(#FADFDB,#4A211C);--brand:#E0624F;--on-accent:light-dark(#FFFFFF,#2A0F0B)}
+:root[data-accent="amber"]{--accent:light-dark(#9A6400,#EBB04A);--accent-soft:light-dark(#F8E9C8,#3F2D0A);--brand:#D9972B;--on-accent:light-dark(#FFFFFF,#241800)}
+.sws{display:flex;gap:14px;flex-wrap:wrap}
+.sw{width:40px;height:40px;border-radius:50%;background:var(--c);border:3px solid var(--bg);box-shadow:0 0 0 2px var(--line)}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink)}
+@media (max-width:360px){.pair,.g2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 140 140" aria-hidden="true"><rect width="140" height="140" rx="32" style="fill:var(--brand)"/><path d="M70 28 114 66H26Z" fill="#fff" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><rect x="38" y="60" width="64" height="52" rx="7" fill="#fff"/><rect x="64" y="68" width="12" height="36" rx="3" style="fill:var(--brand)"/><rect x="52" y="80" width="36" height="12" rx="3" style="fill:var(--brand)"/></svg>
+      <h1>Doc<span>App</span></h1>
+      <span class="me" id="meBadge"></span><button class="gear" id="gear" data-tab="cfg" aria-label="Ajustes (Settings)"></button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filtrar por persona"></div>
+  </header>
+  <main id="view"></main>
+</div>
+<button class="fab" id="fab" aria-label="Agregar"></button>
+<nav class="nav" aria-label="Secciones"><div id="nav"></div></nav>
+<div id="sheetHost"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const H=3600e3, D=24*H, KEY='docapp-v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const uid=()=>Math.random().toString(36).slice(2,9);
+const IC={
+ hoy:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+ meds:'<rect x="3.2" y="8.2" width="17.6" height="7.6" rx="3.8" transform="rotate(-45 12 12)"/><path d="M9.3 9.3l5.4 5.4"/>',
+ vac:'<path d="M17 3l4 4M19 5l-2.5 2.5M14 6l4 4M15.5 7.5l-8 8-3 .5.5-3 8-8M4.5 16l-1.5 5M9 11l2 2"/>',
+ tur:'<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+ cfg:'<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37 1 .608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>',
+ his:'<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12.5h5M10 16.5h5"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>', plus:'<path d="M12 5v14M5 12h14"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>', minus:'<path d="M6 12h12"/>'
+};
+const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+const COLORS=['--p-blue','--p-pink','--p-amber','--p-violet','--p-green'];
+
+/* ---------- fechas ---------- */
+const sod=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const iso=t=>{const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const pd=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c).getTime()};
+const fd=s=>{if(!s)return'';const[a,b,c]=s.split('-');return c+'/'+b+'/'+a};
+const fdt=t=>fd(iso(t))+' '+hm(t);
+const addM=(s,n)=>{const[a,b,c]=s.split('-').map(Number);return iso(new Date(a,b-1+n,c))};
+const daysTo=s=>Math.round((pd(s)-sod(Date.now()))/D);
+const dayName=t=>{const d=Math.round((sod(t)-sod(Date.now()))/D);return d===0?'Hoy':d===-1?'Ayer':d===1?'Mañana':fd(iso(t))};
+const inDays=n=>n===0?'hoy':n===1?'mañana':n>0?'en '+n+' días':'hace '+(-n)+' días';
+const LONG=()=>new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+
+/* ---------- calendario nacional (Argentina) ---------- */
+const CAL=[
+ [0,'Recién nacido',[['BCG','Dosis única'],['Hepatitis B','Dosis neonatal']]],
+ [2,'2 meses',[['Quíntuple','1ª dosis'],['Polio (IPV)','1ª dosis'],['Neumococo conjugada','1ª dosis'],['Rotavirus','1ª dosis']]],
+ [3,'3 meses',[['Meningococo','1ª dosis']]],
+ [4,'4 meses',[['Quíntuple','2ª dosis'],['Polio (IPV)','2ª dosis'],['Neumococo conjugada','2ª dosis'],['Rotavirus','2ª dosis']]],
+ [5,'5 meses',[['Meningococo','2ª dosis']]],
+ [6,'6 meses',[['Quíntuple','3ª dosis'],['Polio (IPV)','3ª dosis'],['Antigripal','1ª y 2ª dosis']]],
+ [12,'12 meses',[['Neumococo conjugada','Refuerzo'],['Triple viral','1ª dosis'],['Hepatitis A','Dosis única']]],
+ [15,'15 meses',[['Varicela','1ª dosis'],['Meningococo','Refuerzo']]],
+ [15,'15 a 18 meses',[['Quíntuple','Refuerzo'],['Triple viral','2ª dosis']],18],
+ [60,'5 años (ingreso escolar)',[['Triple bacteriana celular','Refuerzo'],['Polio (IPV)','Refuerzo'],['Varicela','2ª dosis']]],
+ [132,'11 años',[['VPH','Dosis única'],['Meningococo','Refuerzo'],['Triple bacteriana acelular','Refuerzo']]]
+];
+function childVax(pid,birth,upTo){
+  const out=[];
+  CAL.forEach(([m,age,list,until])=>list.forEach(([name,dose])=>{
+    const due=addM(birth,m);
+    out.push({id:uid(),who:pid,name,dose,age,due,until:until?addM(birth,until):null,applied:daysTo(due)<0&&m<=upTo,date:'',lot:'',photo:''});
+  }));
+  return out;
+}
+function adultVax(pid){
+  return [
+    {id:uid(),who:pid,name:'Doble adultos (antitetánica y difteria)',dose:'Refuerzo cada 10 años',recur:10,last:'',lot:'',photo:''},
+    {id:uid(),who:pid,name:'Hepatitis B',dose:'3 dosis en total',due:'',applied:false,date:'',lot:'',photo:''},
+    {id:uid(),who:pid,name:'Triple viral',dose:'2 dosis en total',due:'',applied:false,date:'',lot:'',photo:''}
+  ];
+}
+
+/* ---------- estado ---------- */
+function seed(){
+  const now=Date.now(), t0=sod(now), at=(h,m=0,off=0)=>t0+off*D+h*H+m*6e4;
+  const people=[
+    {id:'fabri',name:'Fabri',color:'--p-blue',birth:'',os:'',afil:'',sangre:'',medico:'',tel:''},
+    {id:'euge',name:'Euge',color:'--p-pink',birth:'',os:'',afil:'',sangre:'',medico:'',tel:''},
+    {id:'juli',name:'Juli',color:'--p-amber',birth:'2025-07-19',os:'',afil:'',sangre:'',medico:'',tel:''}
+  ];
+  const mk=(o)=>Object.assign({id:uid(),mode:'sched',food:'',notes:'',stock:null,stockMin:3,end:null,logs:[],demo:true},o);
+  const meds=[
+    mk({name:'Antibiótico',who:'juli',qty:5,unit:'ml',every:8,base:at(7),first:at(7),end:at(7)+7*D,food:'con',notes:'Agitar antes de usar. Guardar en la heladera.',stock:20,stockMin:4}),
+    mk({name:'Vitamina D',who:'juli',qty:2,unit:'gotas',every:24,base:at(9),first:at(9,0,-30),notes:'Directo en la boca.'}),
+    mk({name:'Analgésico',who:'fabri',qty:1,unit:'comprimido',every:12,base:at(8),first:at(8,0,-2),end:at(8)+3*D,food:'con',stock:3,stockMin:3}),
+    mk({name:'Anticonceptivo',who:'euge',qty:1,unit:'comprimido',every:24,base:at(22),first:at(22,0,-60),stock:12,stockMin:5}),
+    mk({name:'Antitérmico',who:'juli',qty:3,unit:'ml',mode:'prn',every:6,base:0,first:0,notes:'Solo si tiene fiebre.'})
+  ];
+  meds.forEach(m=>{ if(m.mode!=='sched'||m.name==='Vitamina D')return;
+    for(let s=m.base;s<now-20*6e4;s+=m.every*H) m.logs.push({s,t:s+5*6e4,by:m.who==='fabri'?'fabri':'euge',pb:m.base}); });
+  meds[4].logs.push({s:at(3,10),t:at(3,10),by:'euge'});
+  return {v:2,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:true,people,meds,
+    hist:[{id:uid(),who:'juli',type:'consulta',date:iso(t0-40*D),title:'Control del año',prof:'',esp:'Pediatría',notes:'Control de rutina.',files:[],demo:true},
+      {id:uid(),who:'fabri',type:'estudio',date:iso(t0-95*D),title:'Análisis de rutina',prof:'',esp:'Laboratorio',notes:'',files:[{name:'laboratorio.pdf'}],demo:true},
+      {id:uid(),who:'euge',type:'imagen',date:iso(t0-410*D),title:'Radiografía',prof:'',esp:'',notes:'',files:[{name:'placa-1.jpg'},{name:'informe.pdf'}],demo:true}],
+    vax:[...childVax('juli','2025-07-19',12),...adultVax('fabri'),...adultVax('euge')],
+    turnos:[{id:uid(),who:'fabri',what:'Consulta con el clínico',prof:'',place:'',date:iso(t0-6*D),time:'17:00',notes:'',demo:true},{id:uid(),who:'juli',what:'Control pediátrico',prof:'',place:'',date:iso(t0+10*D),time:'10:30',notes:'Llevar el carnet de vacunas.',demo:true}],
+    controles:[{id:uid(),who:'juli',date:iso(t0-40*D),peso:'9.8',talla:'75',notes:'',demo:true},{id:uid(),who:'juli',date:iso(t0-130*D),peso:'8.6',talla:'70',notes:'',demo:true}]};
+}
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}
+if(!S||S.v!==2)S=seed();
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const P=id=>S.people.find(p=>p.id===id)||{name:'?',color:'--p-violet'};
+const show=x=>S.filter==='all'||x.who===S.filter;
+const who=id=>`<span class="who" style="--c:var(${P(id).color})">${esc(P(id).name)}</span>`;
+const dose=m=>`${m.qty} ${esc(m.unit)}`;
+const HT={consulta:'Consulta',estudio:'Estudio o laboratorio',imagen:'Imagen',receta:'Receta',internacion:'Internación o cirugía'};
+const FOOD={con:'con comida',ayunas:'en ayunas','':''};
+
+/* ---------- lógica de tomas ---------- */
+function pending(m,from,to){
+  const out=[]; if(m.mode!=='sched')return out;
+  const step=m.every*H; let k=Math.max(0,Math.ceil((from-m.base)/step));
+  for(let s=m.base+k*step;s<=to;s+=step){ if(m.end&&s>m.end)break; if(!m.logs.some(l=>l.s===s))out.push(s); }
+  return out;
+}
+const active=m=>!m.end||m.end>=Date.now()-D;
+function todayItems(){
+  const now=Date.now(),a=sod(now),b=a+D-1,items=[];
+  S.meds.filter(m=>m.mode==='sched'&&show(m)).forEach(m=>{
+    pending(m,now-D,b).forEach(s=>items.push({m,s,st:s<now-10*6e4?'late':'next'}));
+    m.logs.forEach(l=>{const t=l.t||l.s;if(t>=a&&t<=b)items.push({m,s:l.s,l,st:l.skip?'skip':'done'})});
+  });
+  return items.sort((x,y)=>x.s-y.s);
+}
+function takeDose(m,s,t,recalc){
+  m.logs.push({s,t,by:S.me,pb:m.base});
+  if(recalc)m.base=t+m.every*H;
+  if(m.stock!=null)m.stock=Math.max(0,m.stock-1);
+}
+const nextVax=()=>S.vax.filter(v=>show(v)&&!v.recur&&!v.applied&&v.due).sort((a,b)=>a.due<b.due?-1:1)[0];
+const nextTurno=()=>S.turnos.filter(t=>show(t)&&t.date>=iso(Date.now())).sort((a,b)=>(a.date+a.time)<(b.date+b.time)?-1:1)[0];
+function vst(v){
+  if(v.recur){ if(!v.last)return{k:'load',t:'Cargar última dosis'};
+    const due=addM(v.last,v.recur*12),d=daysTo(due);
+    return d<0?{k:'late',t:'Vencida '+fd(due)}:d<=90?{k:'soon',t:'Toca '+fd(due)}:{k:'ok',t:'Vigente hasta '+fd(due)}; }
+  if(v.applied)return{k:'ok',t:v.date?'Aplicada '+fd(v.date):'Aplicada'};
+  if(!v.due)return{k:'load',t:'Confirmar en el carnet'};
+  const d=daysTo(v.due),e=v.until?daysTo(v.until):d;
+  if(e<0)return{k:'late',t:'Atrasada'}; if(d<=0)return{k:'soon',t:'En fecha'};
+  if(d<=45)return{k:'soon',t:inDays(d).replace(/^e/,'E')}; return{k:'',t:'Pendiente'};
+}
+
+/* ---------- vistas ---------- */
+const TABS=[['hoy','Hoy'],['meds','Remedios'],['vac','Vacunas'],['tur','Turnos'],['his','Historia']];
+function chrome(){
+  $('#chips').innerHTML=`<button class="chip all" data-f="all" aria-pressed="${S.filter==='all'}">Todos</button>`+
+    S.people.map(p=>`<button class="chip" data-f="${p.id}" aria-pressed="${S.filter===p.id}"><span class="av" style="--c:var(${p.color})">${esc(p.name[0])}</span>${esc(p.name)}</button>`).join('');
+  $('#nav').innerHTML=TABS.map(([k,t])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':''}>${ic(k)}${t}</button>`).join('');
+  $('#meBadge').innerHTML=`Usa: <span class="av" style="--c:var(${P(S.me).color})">${esc(P(S.me).name[0])}</span>`;
+  const g=$('#gear');g.innerHTML=ic('cfg');S.tab==='cfg'?g.setAttribute('aria-current','page'):g.removeAttribute('aria-current');
+  const fab=$('#fab'); fab.hidden=S.tab==='cfg'; fab.innerHTML=ic('plus');
+  fab.setAttribute('aria-label',{hoy:'Agregar medicamento',meds:'Agregar medicamento',vac:'Agregar vacuna',tur:S.turSeg==='turnos'?'Agregar turno':'Agregar control',his:'Agregar entrada a la historia'}[S.tab]||'Agregar');
+}
+function doseRow(i){
+  const {m,s,l,st}=i, t=l&&l.t;
+  const extra=st==='done'?`Dada ${hm(t)} · marcó ${esc(P(l.by).name)}`:st==='skip'?`No se dio · marcó ${esc(P(l.by).name)}`:st==='late'?(sod(s)<sod(Date.now())?'Atrasada, de ayer':'Atrasada'):FOOD[m.food];
+  return `<button class="row ${st}" data-act="${l?'log':'take'}" data-m="${m.id}" data-s="${s}">
+    <span class="time">${hm(s)}</span>
+    <span class="body"><span class="t1">${esc(m.name)} · ${dose(m)} ${m.demo?'<span class="tag">ejemplo</span>':''}</span>
+    <span class="t2">${who(m.who)}${extra?`<span>${extra}</span>`:''}</span></span>
+    <span class="tick">${ic(st==='skip'?'minus':'check')}</span></button>`;
+}
+function vHoy(){
+  const it=todayItems(), done=it.filter(i=>i.st==='done'||i.st==='skip'), late=it.filter(i=>i.st==='late'), next=it.filter(i=>i.st==='next');
+  const total=it.length, pct=total?Math.round(done.length/total*100):0;
+  const prn=S.meds.filter(m=>m.mode==='prn'&&show(m));
+  const low=S.meds.filter(m=>show(m)&&active(m)&&m.stock!=null&&m.stock<=m.stockMin);
+  const nv=nextVax(), nt=nextTurno();
+  let h=S.demo?`<div class="note info"><span>Estos datos son de ejemplo para que veas cómo funciona.</span><button data-act="clearDemo">Borrar ejemplos</button></div>`:'';
+  h+=`<div class="sum"><div><div class="label">${esc(LONG())}</div><div class="big">${total?`${done.length} de ${total} tomas`:'Sin tomas hoy'}</div>
+    <div class="sub">${late.length?`${late.length} atrasada${late.length>1?'s':''}. `:''}${next[0]?`Próxima a las ${hm(next[0].s)}: ${esc(next[0].m.name)} para ${esc(P(next[0].m.who).name)}.`:total?'No quedan tomas programadas para hoy.':'Agregá un medicamento con el botón +.'}</div></div>
+    <div class="bar" role="img" aria-label="${pct}% de las tomas de hoy hechas"><i style="width:${pct}%"></i></div></div>`;
+  low.forEach(m=>h+=`<div class="note"><span>Quedan ${m.stock} dosis de ${esc(m.name)} (${esc(P(m.who).name)}). Conviene comprar.</span></div>`);
+  const sec=(t,arr)=>arr.length?`<section class="sec"><div class="sec-h"><span class="label">${t}</span><span class="count">${arr.length}</span></div><div class="list">${arr.map(doseRow).join('')}</div></section>`:'';
+  h+=sec('Atrasadas',late)+sec('Próximas',next);
+  if(prn.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Si hace falta</span></div><div class="list">${prn.map(m=>{
+    const last=m.logs.filter(l=>!l.skip).sort((a,b)=>b.t-a.t)[0], ok=!last||Date.now()>=last.t+m.every*H;
+    return `<div class="row"><span class="body"><span class="t1">${esc(m.name)} · ${dose(m)} ${m.demo?'<span class="tag">ejemplo</span>':''}</span>
+      <span class="t2">${who(m.who)}<span>${last?`Última: ${dayName(last.t).toLowerCase()} ${hm(last.t)}`:'Sin dosis registradas'}</span>
+      ${last?`<span class="pill ${ok?'ok':'soon'}">${ok?'Se puede dar':'Esperar hasta '+hm(last.t+m.every*H)}</span>`:''}</span></span>
+      <button class="btn sm ghost" data-act="prn" data-m="${m.id}">Registrar</button></div>`}).join('')}</div></section>`;
+  h+=sec('Hechas',done);
+  h+=`<section class="sec"><div class="sec-h"><span class="label">Lo que viene</span></div><div class="pair">
+    <button class="mini" data-tab="vac"><span class="label">Próxima vacuna</span>${nv?`<b>${esc(nv.name)}</b><span>${esc(P(nv.who).name)} · ${fd(nv.due)} (${inDays(daysTo(nv.due))})</span>`:'<b>Nada pendiente</b>'}</button>
+    <button class="mini" data-tab="tur"><span class="label">Próximo turno</span>${nt?`<b>${esc(nt.what)}</b><span>${esc(P(nt.who).name)} · ${fd(nt.date)} ${esc(nt.time)}</span>`:'<b>Sin turnos</b>'}</button></div></section>`;
+  return h;
+}
+function vMeds(){
+  let h=`<div class="seg" role="group"><button data-seg="medSeg:activos" aria-pressed="${S.medSeg==='activos'}">Medicamentos</button><button data-seg="medSeg:historial" aria-pressed="${S.medSeg==='historial'}">Historial</button></div>`;
+  if(S.medSeg==='activos'){
+    const ms=S.meds.filter(show), act=ms.filter(active), fin=ms.filter(m=>!active(m));
+    const card=m=>{const nx=m.mode==='sched'?pending(m,Date.now()-D,Date.now()+3*D)[0]:null;
+      return `<button class="row" data-act="editMed" data-m="${m.id}"><span class="body"><span class="t1">${esc(m.name)} ${m.demo?'<span class="tag">ejemplo</span>':''}</span>
+      <span class="t2">${who(m.who)}<span>${dose(m)} ${m.mode==='prn'?`si hace falta, mínimo cada ${m.every} h`:`cada ${m.every} h`}</span><span>${FOOD[m.food]}</span></span>
+      <span class="t2"><span class="pill">${m.mode==='prn'?'A demanda':m.end?'Hasta '+fd(iso(m.end)):'Permanente'}</span>${nx?`<span class="pill load">Próxima ${dayName(nx).toLowerCase()} ${hm(nx)}</span>`:''}${m.stock!=null?`<span class="pill ${m.stock<=m.stockMin?'late':''}">Quedan ${m.stock}</span>`:''}</span></span></button>`};
+    h+=`<section class="sec"><div class="sec-h"><span class="label">En curso</span><span class="count">${act.length}</span></div><div class="list">${act.map(card).join('')||'<div class="empty">No hay medicamentos cargados. Tocá + para agregar el primero.</div>'}</div></section>`;
+    if(fin.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Terminados</span><span class="count">${fin.length}</span></div><div class="list">${fin.map(card).join('')}</div></section>`;
+  }else{
+    const logs=[];S.meds.filter(show).forEach(m=>m.logs.forEach(l=>logs.push({m,l})));
+    logs.sort((a,b)=>(b.l.t||b.l.s)-(a.l.t||a.l.s));
+    const by={};logs.forEach(x=>{(by[dayName(x.l.t||x.l.s)]??=[]).push(x)});
+    h+=Object.keys(by).length?Object.entries(by).map(([d,arr])=>`<section class="sec"><div class="sec-h"><span class="label">${d}</span><span class="count">${arr.length}</span></div><div class="list">${arr.map(({m,l})=>{
+      const df=l.skip?0:Math.round((l.t-l.s)/6e4);
+      return `<div class="row ${l.skip?'skip':'done'}"><span class="time">${hm(l.t||l.s)}</span><span class="body"><span class="t1">${esc(m.name)} · ${dose(m)}</span>
+      <span class="t2">${who(m.who)}<span>${l.skip?'No se dio':'marcó '+esc(P(l.by).name)}</span>${Math.abs(df)>=15&&m.mode==='sched'?`<span class="pill soon">${df>0?'+':'−'}${Math.abs(df)} min</span>`:''}</span></span><span class="tick">${ic(l.skip?'minus':'check')}</span></div>`}).join('')}</div></section>`).join('')
+      :'<div class="list"><div class="empty">Todavía no hay tomas registradas.</div></div>';
+  }
+  return h;
+}
+function vVac(){
+  const dated=p=>S.vax.some(v=>v.who===p.id&&v.due&&!v.applied)?0:1;
+  const ppl=S.people.filter(p=>S.filter==='all'||p.id===S.filter).sort((a,b)=>dated(a)-dated(b));
+  let h=`<div class="note info"><span>Fechas calculadas con el Calendario Nacional de Vacunación. Confirmalas siempre con el pediatra o el vacunatorio.</span></div>`;
+  ppl.forEach(p=>{
+    const vs=S.vax.filter(v=>v.who===p.id); if(!vs.length){h+=`<section class="sec"><h2>${esc(p.name)}</h2><div class="list"><div class="empty">Sin vacunas cargadas. Tocá + para agregar.</div></div></section>`;return}
+    const pend=vs.filter(v=>v.recur?!v.last:!v.applied).length;
+    h+=`<section class="sec"><div class="sec-h"><h2>${esc(p.name)}</h2><span class="count">${pend} por aplicar o confirmar</span></div>`;
+    const groups=[];vs.forEach(v=>{const k=v.age||'';let g=groups.find(g=>g.k===k);if(!g)groups.push(g={k,due:v.due,until:v.until,items:[]});g.items.push(v)});
+    groups.forEach(g=>{
+      if(g.k)h+=`<div class="sec-h" style="margin-top:6px"><span class="label">${esc(g.k)}</span><span class="count">${g.due?(g.until?`${fd(g.due)} al ${fd(g.until)}`:fd(g.due)):''}</span></div>`;
+      h+=`<div class="list">${g.items.map(v=>{const s=vst(v);return `<button class="row ${s.k==='ok'&&!v.recur?'done':''}" data-act="vax" data-v="${v.id}"><span class="body"><span class="t1">${esc(v.name)}</span><span class="t2"><span>${esc(v.dose)}</span>${!g.k&&v.due&&!v.applied?`<span>${fd(v.due)}</span>`:''}${v.lot?`<span>Lote ${esc(v.lot)}</span>`:''}</span></span><span class="pill ${s.k}">${s.t}</span></button>`}).join('')}</div>`;
+    });
+    h+=`</section>`;
+  });
+  return h;
+}
+function vTur(){
+  let h=`<div class="seg" role="group"><button data-seg="turSeg:turnos" aria-pressed="${S.turSeg==='turnos'}">Turnos médicos</button><button data-seg="turSeg:controles" aria-pressed="${S.turSeg==='controles'}">Peso y talla</button></div>`;
+  if(S.turSeg==='turnos'){
+    const ts=S.turnos.filter(show).sort((a,b)=>(a.date+a.time)<(b.date+b.time)?-1:1), td=iso(Date.now());
+    const row=t=>`<button class="row" data-act="editTur" data-id="${t.id}"><span class="body"><span class="t1">${esc(t.what)} ${t.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(t.who)}<span>${fd(t.date)} ${esc(t.time)}</span>${t.prof?`<span>${esc(t.prof)}</span>`:''}${t.place?`<span>${esc(t.place)}</span>`:''}</span></span>${t.date>=td?`<span class="pill ${daysTo(t.date)<=7?'soon':''}">${inDays(daysTo(t.date))}</span>`:`<span class="pill ${t.hist?'ok':'load'}">${t.hist?'En historia':'Pasar a historia'}</span>`}</button>`;
+    const up=ts.filter(t=>t.date>=td), old=ts.filter(t=>t.date<td).reverse();
+    h+=`<section class="sec"><div class="sec-h"><span class="label">Próximos</span><span class="count">${up.length}</span></div><div class="list">${up.map(row).join('')||'<div class="empty">No hay turnos agendados. Tocá + para cargar uno.</div>'}</div></section>`;
+    if(old.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Anteriores</span></div><div class="list">${old.map(row).join('')}</div></section>`;
+  }else{
+    const cs=S.controles.filter(show).sort((a,b)=>a.date<b.date?1:-1);
+    h+=`<section class="sec"><div class="sec-h"><span class="label">Controles</span><span class="count">${cs.length}</span></div><div class="list">${cs.map((c,i)=>{
+      const prev=cs.slice(i+1).find(x=>x.who===c.who), dp=prev&&c.peso&&prev.peso?(c.peso-prev.peso).toFixed(1):null;
+      return `<button class="row" data-act="editCtl" data-id="${c.id}"><span class="time" style="width:auto">${fd(c.date)}</span><span class="body"><span class="t1">${c.peso?esc(c.peso)+' kg':''}${c.peso&&c.talla?' · ':''}${c.talla?esc(c.talla)+' cm':''} ${c.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(c.who)}${dp!=null?`<span>${dp>=0?'+':''}${dp} kg desde el anterior</span>`:''}</span></span></button>`}).join('')||'<div class="empty">Sin controles. Tocá + para cargar peso y talla.</div>'}</div></section>`;
+  }
+  return h;
+}
+function vCfg(){
+  return `<section class="sec"><div class="sec-h"><h2>Integrantes</h2><button class="btn sm ghost" data-act="editP" data-id="">Agregar</button></div><div class="list">${S.people.map(p=>`<button class="row" data-act="editP" data-id="${p.id}"><span class="av lg" style="--c:var(${p.color})">${esc(p.name[0])}</span><span class="body"><span class="t1">${esc(p.name)}</span><span class="t2"><span>${p.birth?'Nació el '+fd(p.birth):'Sin fecha de nacimiento'}</span><span>${p.os?esc(p.os):'Obra social sin cargar'}</span></span></span></button>`).join('')}</div></section>
+  <section class="sec"><h2>Quién usa este teléfono</h2><div class="seg" role="group">${S.people.filter(p=>p.id==='fabri'||p.id==='euge').map(p=>`<button data-me="${p.id}" aria-pressed="${S.me===p.id}">${esc(p.name)}</button>`).join('')}</div><p class="foot" style="text-align:left;margin:0">En la app real esto sale del inicio de sesión con Google (Sign in with Google). Cada toma queda marcada con el nombre de quien la tildó.</p></section>
+  <section class="sec"><h2>Color de énfasis</h2><div class="sws" role="group" aria-label="Color de énfasis">${[['teal','Verde agua','#1FB5A3'],['blue','Azul','#4C7FE6'],['violet','Violeta','#8B63DB'],['coral','Coral','#E0624F'],['amber','Ámbar','#D9972B']].map(([k,t,c])=>`<button class="sw" style="--c:${c}" data-accent="${k}" aria-label="${t}" aria-pressed="${(S.accent||'teal')===k}"></button>`).join('')}</div></section>
+  <section class="sec"><h2>Emergencias</h2><div class="list"><div class="row"><span class="body"><span class="t1">Emergencias médicas</span></span><b style="user-select:all">107</b></div><div class="row"><span class="body"><span class="t1">Emergencias generales</span></span><b style="user-select:all">911</b></div>${S.people.filter(p=>p.medico||p.tel).map(p=>`<div class="row"><span class="body"><span class="t1">${esc(p.medico||'Médico')}</span><span class="t2">${who(p.id)}</span></span><b style="user-select:all">${esc(p.tel)}</b></div>`).join('')}</div></section>
+  <section class="sec"><h2>Cuenta y avisos</h2><div class="stack">
+    <button class="btn ghost" disabled>Iniciar sesión con Google (Sign in with Google)</button>
+    <button class="btn ghost" disabled>Notificaciones de tomas (Notifications)</button>
+    <button class="btn ghost" disabled>Leer turnos del calendario Salud (Google Calendar)</button>
+    <button class="btn ghost" disabled>Carpeta de estudios en Google Drive</button>
+    <p class="foot" style="text-align:left;margin:0">Estas funciones se activan al publicar: el inicio de sesión y la sincronización con Euge van con Firebase, el calendario y Drive piden un permiso de Google, y los avisos a la hora exacta llegan con la versión Android.</p>
+    <button class="btn" data-act="share">Compartir la app (Share)</button>
+    ${S.demo?'<button class="btn ghost" data-act="clearDemo">Borrar los datos de ejemplo</button>':''}
+    <button class="btn danger" data-act="reset">Borrar todo y volver a los ejemplos</button></div></section>
+  <p class="foot">DocApp · versión web · por ahora los datos se guardan solo en este teléfono</p>`;
+}
+function hisList(){
+  const q=(S.hisQ||'').toLowerCase();
+  const es=S.hist.filter(e=>show(e)&&(S.hisType==='all'||e.type===S.hisType)&&(!q||[e.title,e.prof,e.esp,e.notes,HT[e.type]].join(' ').toLowerCase().includes(q))).sort((a,b)=>a.date<b.date?1:-1);
+  if(!es.length)return `<div class="list"><div class="empty">${S.hist.some(show)?'Nada coincide con el filtro o la búsqueda.':'La historia está vacía. Tocá + para cargar la primera consulta o estudio.'}</div></div>`;
+  const by={};es.forEach(e=>(by[e.date.slice(0,4)]??=[]).push(e));
+  return Object.keys(by).sort().reverse().map(y=>`<section class="sec"><div class="sec-h"><span class="label">${y}</span><span class="count">${by[y].length}</span></div><div class="list">${by[y].map(e=>`<button class="row" data-act="editHis" data-id="${e.id}"><span class="body"><span class="t1">${esc(e.title)} ${e.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(e.who)}<span>${fd(e.date)}</span>${e.esp?`<span>${esc(e.esp)}</span>`:''}${e.prof?`<span>${esc(e.prof)}</span>`:''}</span><span class="t2"><span class="pill load">${HT[e.type]}</span>${e.files.length?`<span class="pill">${e.files.length} archivo${e.files.length>1?'s':''}</span>`:''}</span></span></button>`).join('')}</div></section>`).join('');
+}
+function vHis(){
+  let h=`<div class="note info"><span>Los estudios se van a guardar en la carpeta compartida de Google Drive. Hasta conectar Drive, de cada adjunto solo queda el nombre.</span></div>`;
+  if(S.filter!=='all'){const p=P(S.filter),nd=v=>esc(v)||'Sin cargar';
+    h+=`<section class="sec"><div class="sec-h"><h2>Datos de base de ${esc(p.name)}</h2><button class="btn sm ghost" data-act="editP" data-id="${p.id}">Editar</button></div><div class="sum"><dl class="kv"><dt>Alergias</dt><dd>${nd(p.alergias)}</dd><dt>Antecedentes</dt><dd>${nd(p.antecedentes)}</dd><dt>Medicación habitual</dt><dd>${nd(p.habitual)}</dd><dt>Grupo sanguíneo</dt><dd>${nd(p.sangre)}</dd></dl><button class="btn ghost" data-act="resumen" data-id="${p.id}">Resumen para la consulta</button></div></section>`;
+  }else h+=`<p class="foot" style="margin:0">Elegí una persona arriba para ver sus datos de base y armar el resumen para la consulta.</p>`;
+  h+=`<label class="f"><span>Buscar en la historia</span><input id="his-q" type="search" value="${esc(S.hisQ)}" placeholder="Ej.: laboratorio, pediatra"></label>
+  <div class="chips" style="margin-top:0" role="group" aria-label="Filtrar por tipo"><button class="chip all" data-ht="all" aria-pressed="${S.hisType==='all'}">Todo</button>${Object.entries(HT).map(([k,t])=>`<button class="chip all" data-ht="${k}" aria-pressed="${S.hisType===k}">${t}</button>`).join('')}</div>
+  <div id="his-list" class="stack" style="gap:18px">${hisList()}</div>`;
+  return h;
+}
+function render(){
+  document.documentElement.dataset.accent=S.accent||'teal';
+  chrome();
+  $('#view').innerHTML={hoy:vHoy,meds:vMeds,vac:vVac,tur:vTur,his:vHis,cfg:vCfg}[S.tab]();
+  save();
+}
+
+/* ---------- hojas ---------- */
+let SH=null;
+function sheet(title,body){ $('#sheetHost').innerHTML=`<div class="scrim" data-close="1"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-h"><h2>${esc(title)}</h2><button class="x" data-close="1" aria-label="Cerrar">${ic('x')}</button></div>${body}</div></div>`; }
+function closeSheet(){ $('#sheetHost').innerHTML='';SH=null; }
+function toast(t){ const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,2400); }
+const val=id=>{const e=document.getElementById(id);return e?e.value.trim():''};
+const opts=(sel)=>S.people.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)}</option>`).join('');
+const defWho=()=>S.filter==='all'?S.people[0].id:S.filter;
+
+function shTake(){
+  const {m,s,when,custom,mode}=SH, now=Date.now();
+  const t=when==='now'?now:when==='sched'?s:custom, step=m.every*H;
+  const last=m.end&&s+step>m.end;
+  sheet('Marcar toma',`
+    <dl class="kv"><dt>Medicamento</dt><dd>${esc(m.name)} · ${dose(m)}</dd><dt>Para</dt><dd>${esc(P(m.who).name)}</dd><dt>Programada</dt><dd>${dayName(s)} ${hm(s)}</dd>${m.notes?`<dt>Indicaciones</dt><dd>${esc(m.notes)}</dd>`:''}</dl>
+    <div class="stack"><span class="label">¿A qué hora se dio?</span>
+      <div class="seg"><button data-when="now" aria-pressed="${when==='now'}">Ahora ${hm(now)}</button><button data-when="sched" aria-pressed="${when==='sched'}">A horario ${hm(s)}</button><button data-when="custom" aria-pressed="${when==='custom'}">Otra hora</button></div>
+      ${when==='custom'?`<label class="f"><span>Hora real</span><input type="time" id="tk-time" value="${hm(custom)}"></label>`:''}</div>
+    ${last?'<div class="note info"><span>Es la última toma del tratamiento.</span></div>':`<div class="stack"><span class="label">¿Qué hacemos con la próxima toma?</span>
+      <button class="opt" data-mode="recalc" aria-pressed="${mode==='recalc'}"><span class="dot"></span><span><b>Recalcular desde la hora real</b><small>Próxima: ${dayName(t+step).toLowerCase()} ${hm(t+step)}, y las siguientes cada ${m.every} h desde ahí.</small></span></button>
+      <button class="opt" data-mode="keep" aria-pressed="${mode==='keep'}"><span class="dot"></span><span><b>Mantener el horario original</b><small>Próxima: ${dayName(s+step).toLowerCase()} ${hm(s+step)}, como estaba programada.</small></span></button></div>`}
+    <button class="btn" data-act="okTake">Confirmar toma</button>
+    <button class="btn ghost" data-act="skipTake">No se dio, saltear esta toma</button>`);
+}
+function shLog(m,l){
+  sheet(l.skip?'Toma salteada':'Toma registrada',`<dl class="kv"><dt>Medicamento</dt><dd>${esc(m.name)} · ${dose(m)}</dd><dt>Para</dt><dd>${esc(P(m.who).name)}</dd><dt>Programada</dt><dd>${fdt(l.s)}</dd>${l.skip?'':`<dt>Dada</dt><dd>${fdt(l.t)}</dd>`}<dt>Marcó</dt><dd>${esc(P(l.by).name)}</dd></dl>
+  <button class="btn danger" data-act="undoLog">Deshacer esta marca</button>`);
+}
+function shPrn(){
+  const m=SH.m,last=m.logs.filter(l=>!l.skip).sort((a,b)=>b.t-a.t)[0],early=last&&Date.now()<last.t+m.every*H;
+  sheet('Registrar dosis',`<dl class="kv"><dt>Medicamento</dt><dd>${esc(m.name)} · ${dose(m)}</dd><dt>Para</dt><dd>${esc(P(m.who).name)}</dd><dt>Última dosis</dt><dd>${last?fdt(last.t):'Ninguna'}</dd><dt>Intervalo mínimo</dt><dd>${m.every} h</dd>${m.notes?`<dt>Indicaciones</dt><dd>${esc(m.notes)}</dd>`:''}</dl>
+  ${early?`<div class="note"><span>Todavía no pasaron las ${m.every} h desde la última dosis. Se puede repetir a las ${hm(last.t+m.every*H)}.</span></div><button class="btn danger" data-act="okPrn">Registrar igual, ahora ${hm(Date.now())}</button>`:`<button class="btn" data-act="okPrn">Registrar dosis ahora, ${hm(Date.now())}</button>`}`);
+}
+function shMed(m){
+  const e=m||{name:'',who:defWho(),qty:1,unit:'comprimido',mode:'sched',every:8,first:Date.now(),end:null,food:'',notes:'',stock:null,stockMin:3};
+  const f=new Date(e.first||Date.now()), days=e.end?Math.round((e.end-e.first)/D):7;
+  SH={k:'med',m,mode:e.mode,dur:e.end?'fin':'perm',del:false};
+  sheet(m?'Editar medicamento':'Nuevo medicamento',`
+    <label class="f"><span>Nombre</span><input id="md-name" value="${esc(e.name)}" placeholder="Ej.: Amoxicilina"></label>
+    <div class="g2"><label class="f"><span>Quién lo toma</span><select id="md-who">${opts(e.who)}</select></label>
+    <label class="f"><span>Con comida</span><select id="md-food"><option value="">Indistinto</option><option value="con" ${e.food==='con'?'selected':''}>Con comida</option><option value="ayunas" ${e.food==='ayunas'?'selected':''}>En ayunas</option></select></label></div>
+    <div class="g2"><label class="f"><span>Dosis</span><input id="md-qty" type="number" min="0" step="0.5" inputmode="decimal" value="${e.qty}"></label>
+    <label class="f"><span>Unidad</span><select id="md-unit">${['comprimido','ml','gotas','cápsula','puff','sobre','aplicación','mg'].map(u=>`<option ${u===e.unit?'selected':''}>${u}</option>`).join('')}</select></label></div>
+    <div class="stack"><span class="label">Cómo se toma</span><div class="seg" id="md-modes"><button data-mdmode="sched" aria-pressed="${e.mode==='sched'}">Con horario</button><button data-mdmode="prn" aria-pressed="${e.mode==='prn'}">Si hace falta</button></div></div>
+    <label class="f"><span id="md-every-l">${e.mode==='prn'?'Intervalo mínimo entre dosis (horas)':'Cada cuántas horas'}</span><input id="md-every" type="number" min="1" max="168" inputmode="numeric" value="${e.every}"></label>
+    <div id="md-sched" ${e.mode==='prn'?'hidden':''} class="stack">
+      <div class="g2"><label class="f"><span>Primera dosis: día</span><input id="md-date" type="date" value="${iso(f)}"></label><label class="f"><span>Hora</span><input id="md-time" type="time" value="${hm(f)}"></label></div>
+      <span class="label">Duración</span><div class="seg"><button data-mddur="perm" aria-pressed="${!e.end}">Permanente</button><button data-mddur="fin" aria-pressed="${!!e.end}">Con duración</button></div>
+      <label class="f" id="md-days-w" ${e.end?'':'hidden'}><span>Cantidad de días</span><input id="md-days" type="number" min="1" inputmode="numeric" value="${days}"></label></div>
+    <label class="f"><span>Indicaciones</span><textarea id="md-notes" placeholder="Ej.: agitar antes de usar">${esc(e.notes)}</textarea></label>
+    <div class="g2"><label class="f"><span>Dosis que quedan (opcional)</span><input id="md-stock" type="number" min="0" inputmode="numeric" value="${e.stock??''}"></label><label class="f"><span>Avisar cuando queden</span><input id="md-min" type="number" min="0" inputmode="numeric" value="${e.stockMin}"></label></div>
+    <div class="err" id="md-err" hidden></div>
+    <button class="btn" data-act="saveMed">Guardar</button>${m?'<button class="btn danger" data-act="del">Eliminar medicamento</button>':''}`);
+}
+function shVax(v){
+  SH={k:'vax',v};
+  const s=vst(v), rec=!!v.recur, has=rec?v.last:v.applied;
+  sheet(v.name,`<dl class="kv"><dt>Para</dt><dd>${esc(P(v.who).name)}</dd><dt>Dosis</dt><dd>${esc(v.dose)}</dd>${v.due?`<dt>Fecha indicada</dt><dd>${fd(v.due)}${v.until?' al '+fd(v.until):''}</dd>`:''}<dt>Estado</dt><dd><span class="pill ${s.k}">${s.t}</span></dd></dl>
+    <label class="f"><span>${rec?'Fecha de la última dosis':'Fecha de aplicación'}</span><input id="vx-date" type="date" max="${iso(Date.now())}" value="${rec?v.last:(v.date||(v.applied?'':iso(Date.now())))}"></label>
+    <label class="f"><span>Lote (opcional)</span><input id="vx-lot" value="${esc(v.lot)}"></label>
+    <label class="f"><span>Foto del carnet (opcional)</span><input id="vx-photo" type="file" accept="image/*"></label>
+    ${v.photo?`<img class="photo" src="${v.photo}" alt="Foto del carnet">`:''}
+    <div class="err" id="vx-err" hidden></div>
+    <button class="btn" data-act="saveVax">${has?'Guardar cambios':rec?'Guardar última dosis':'Marcar como aplicada'}</button>
+    ${has?`<button class="btn ghost" data-act="unVax">${rec?'Borrar la fecha cargada':'Quitar la marca de aplicada'}</button>`:''}
+    ${v.custom?'<button class="btn danger" data-act="del">Eliminar vacuna</button>':''}`);
+}
+function shNewVax(){
+  SH={k:'newvax'};
+  sheet('Nueva vacuna',`<label class="f"><span>Vacuna</span><input id="nv-name" placeholder="Ej.: Antigripal 2027"></label>
+    <div class="g2"><label class="f"><span>Para quién</span><select id="nv-who">${opts(defWho())}</select></label><label class="f"><span>Fecha en que toca</span><input id="nv-due" type="date"></label></div>
+    <label class="f"><span>Dosis o detalle</span><input id="nv-dose" placeholder="Ej.: dosis anual"></label>
+    <div class="err" id="nv-err" hidden></div><button class="btn" data-act="saveNewVax">Guardar</button>`);
+}
+function gcal(t){
+  const [h,m]=(t.time||'09:00').split(':').map(Number), e=new Date(pd(t.date)+(h+1)*H+m*6e4), z=s=>s.replace(/[-:]/g,'');
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(P(t.who).name+': '+t.what)+'&dates='+z(t.date)+'T'+pad(h)+pad(m)+'00/'+z(iso(e))+'T'+z(hm(e))+'00&ctz=America/Argentina/Cordoba&location='+encodeURIComponent(t.place||'')+'&details='+encodeURIComponent([t.prof,t.notes].filter(Boolean).join(' · '));
+}
+function shTur(t){
+  const e=t||{who:defWho(),what:'',prof:'',place:'',date:iso(Date.now()+D),time:'09:00',notes:''}; SH={k:'tur',t,del:false};
+  sheet(t?'Editar turno':'Nuevo turno',`<label class="f"><span>Motivo</span><input id="tu-what" value="${esc(e.what)}" placeholder="Ej.: control pediátrico"></label>
+    <div class="g2"><label class="f"><span>Para quién</span><select id="tu-who">${opts(e.who)}</select></label><label class="f"><span>Profesional</span><input id="tu-prof" value="${esc(e.prof)}"></label></div>
+    <div class="g2"><label class="f"><span>Día</span><input id="tu-date" type="date" value="${e.date}"></label><label class="f"><span>Hora</span><input id="tu-time" type="time" value="${e.time}"></label></div>
+    <label class="f"><span>Lugar</span><input id="tu-place" value="${esc(e.place)}"></label>
+    <label class="f"><span>Notas</span><textarea id="tu-notes">${esc(e.notes)}</textarea></label>
+    <div class="err" id="tu-err" hidden></div><button class="btn" data-act="saveTur">Guardar</button>${t?`<a class="btn ghost" style="text-decoration:none" target="_blank" rel="noopener" href="${gcal(t)}">Agregar a Google Calendar (Add to Google Calendar)</a>`:'<p class="foot" style="margin:0">Después de guardar, abrí el turno para pasarlo a Google Calendar.</p>'}${t&&t.date<iso(Date.now())&&!t.hist?'<button class="btn ghost" data-act="turToHis">Pasar a la historia clínica</button>':''}${t?'<button class="btn danger" data-act="del">Eliminar turno</button>':''}`);
+}
+const fileList=()=>SH.files.length?`<div class="list" style="box-shadow:none;border:1px solid var(--line)">${SH.files.map((f,i)=>`<div class="row"><span class="body"><span class="t1">${esc(f.name)}</span>${f.size?`<span class="t2"><span>${Math.max(1,Math.round(f.size/1024))} KB</span></span>`:''}</span><button class="btn sm ghost" data-act="rmFile" data-i="${i}">Quitar</button></div>`).join('')}</div>`:'<p class="foot" style="text-align:left;margin:0">Sin archivos adjuntos.</p>';
+function shHis(e,preset){
+  const v=e||Object.assign({who:defWho(),type:'consulta',date:iso(Date.now()),title:'',prof:'',esp:'',notes:'',files:[]},preset||{});
+  SH={k:'his',e,del:false,preset,files:[...(v.files||[])]};
+  sheet(e?'Editar entrada':'Nueva entrada de historia',`<div class="g2"><label class="f"><span>Tipo</span><select id="hs-type">${Object.entries(HT).map(([k,t])=>`<option value="${k}" ${k===v.type?'selected':''}>${t}</option>`).join('')}</select></label><label class="f"><span>Para quién</span><select id="hs-who">${opts(v.who)}</select></label></div>
+    <label class="f"><span>Título o motivo</span><input id="hs-title" value="${esc(v.title)}" placeholder="Ej.: análisis de sangre"></label>
+    <div class="g2"><label class="f"><span>Fecha</span><input id="hs-date" type="date" value="${v.date}"></label><label class="f"><span>Especialidad</span><input id="hs-esp" value="${esc(v.esp)}"></label></div>
+    <label class="f"><span>Profesional o lugar</span><input id="hs-prof" value="${esc(v.prof)}"></label>
+    <label class="f"><span>Resumen</span><textarea id="hs-notes" placeholder="Qué dijo el médico, resultados, indicaciones">${esc(v.notes)}</textarea></label>
+    <div class="stack"><span class="label">Archivos adjuntos</span><div id="hs-flist">${fileList()}</div>
+    <label class="f"><span>Agregar estudios, fotos o PDF</span><input id="hs-files" type="file" multiple accept="image/*,application/pdf"></label>
+    <p class="foot" style="text-align:left;margin:0">En la app publicada se suben a la carpeta de Google Drive. Acá solo queda el nombre, como muestra.</p></div>
+    <div class="err" id="hs-err" hidden></div><button class="btn" data-act="saveHis">Guardar</button>${e?'<button class="btn danger" data-act="del">Eliminar entrada</button>':''}`);
+}
+function shCtl(c){
+  const e=c||{who:S.filter==='all'?(S.people.find(p=>p.id==='juli')||S.people[0]).id:S.filter,date:iso(Date.now()),peso:'',talla:'',notes:''}; SH={k:'ctl',c,del:false};
+  sheet(c?'Editar control':'Nuevo control',`<div class="g2"><label class="f"><span>Para quién</span><select id="ct-who">${opts(e.who)}</select></label><label class="f"><span>Fecha</span><input id="ct-date" type="date" value="${e.date}"></label></div>
+    <div class="g2"><label class="f"><span>Peso (kg)</span><input id="ct-peso" type="number" step="0.01" min="0" inputmode="decimal" value="${esc(e.peso)}"></label><label class="f"><span>Talla (cm)</span><input id="ct-talla" type="number" step="0.1" min="0" inputmode="decimal" value="${esc(e.talla)}"></label></div>
+    <label class="f"><span>Notas</span><textarea id="ct-notes">${esc(e.notes)}</textarea></label>
+    <div class="err" id="ct-err" hidden></div><button class="btn" data-act="saveCtl">Guardar</button>${c?'<button class="btn danger" data-act="del">Eliminar control</button>':''}`);
+}
+function shP(p){
+  const e=p||{name:'',color:COLORS[S.people.length%COLORS.length],birth:'',os:'',afil:'',sangre:'',medico:'',tel:''}; SH={k:'p',p,del:false};
+  sheet(p?'Ficha de '+p.name:'Nuevo integrante',`<div class="g2"><label class="f"><span>Nombre</span><input id="pp-name" value="${esc(e.name)}"></label><label class="f"><span>Fecha de nacimiento</span><input id="pp-birth" type="date" value="${e.birth}"></label></div>
+    <div class="g2"><label class="f"><span>Obra social o prepaga</span><input id="pp-os" value="${esc(e.os)}"></label><label class="f"><span>Nº de afiliado</span><input id="pp-afil" value="${esc(e.afil)}"></label></div>
+    <div class="g2"><label class="f"><span>Grupo sanguíneo</span><input id="pp-sangre" value="${esc(e.sangre)}"></label><label class="f"><span>Médico o pediatra</span><input id="pp-medico" value="${esc(e.medico)}"></label></div>
+    <label class="f"><span>Teléfono del médico</span><input id="pp-tel" type="tel" value="${esc(e.tel)}"></label>
+    <label class="f"><span>Alergias</span><textarea id="pp-alergias">${esc(e.alergias)}</textarea></label>
+    <label class="f"><span>Antecedentes</span><textarea id="pp-antecedentes">${esc(e.antecedentes)}</textarea></label>
+    <label class="f"><span>Medicación habitual</span><textarea id="pp-habitual">${esc(e.habitual)}</textarea></label>
+    ${!p?'<label class="f"><span>Vacunas a precargar</span><select id="pp-cal"><option value="adult">Adulto</option><option value="child">Bebé o niño (según fecha de nacimiento)</option><option value="">Ninguna</option></select></label>':''}
+    <div class="err" id="pp-err" hidden></div><button class="btn" data-act="saveP">Guardar</button>${p&&S.people.length>1&&p.id!=='fabri'&&p.id!=='euge'?'<button class="btn danger" data-act="del">Eliminar integrante</button>':''}`);
+}
+const fail=(id,msg)=>{const e=document.getElementById(id);e.textContent=msg;e.hidden=false;return false};
+
+/* ---------- acciones ---------- */
+const ACT={
+  take(d){const m=S.meds.find(x=>x.id===d.m),s=+d.s;SH={k:'take',m,s,when:'now',custom:Date.now(),mode:'recalc'};shTake()},
+  okTake(){const {m,s,when,custom,mode}=SH,t=when==='now'?Date.now():when==='sched'?s:custom;takeDose(m,s,t,mode==='recalc');closeSheet();render();toast(mode==='recalc'?'Toma marcada. Próxima '+hm(t+m.every*H):'Toma marcada. Horario sin cambios')},
+  skipTake(){const {m,s}=SH;m.logs.push({s,t:null,skip:true,by:S.me,pb:m.base});closeSheet();render();toast('Toma salteada')},
+  log(d){const m=S.meds.find(x=>x.id===d.m),l=m.logs.find(x=>x.s===+d.s);SH={k:'log',m,l};shLog(m,l)},
+  undoLog(){const {m,l}=SH;m.logs=m.logs.filter(x=>x!==l);if(l.pb!=null)m.base=l.pb;if(!l.skip&&m.stock!=null)m.stock++;closeSheet();render();toast('Marca deshecha')},
+  prn(d){SH={k:'prn',m:S.meds.find(x=>x.id===d.m)};shPrn()},
+  okPrn(){const m=SH.m,t=Date.now();m.logs.push({s:t,t,by:S.me});if(m.stock!=null)m.stock=Math.max(0,m.stock-1);closeSheet();render();toast('Dosis registrada')},
+  editMed(d){shMed(S.meds.find(x=>x.id===d.m))},
+  saveMed(){
+    const name=val('md-name'),qty=parseFloat(val('md-qty')),every=parseFloat(val('md-every')),mode=SH.mode;
+    if(!name)return fail('md-err','Escribí el nombre del medicamento.');
+    if(!(qty>0))return fail('md-err','La dosis tiene que ser mayor a cero.');
+    if(!(every>=1))return fail('md-err','Indicá cada cuántas horas (mínimo 1).');
+    let first=0,end=null;
+    if(mode==='sched'){ if(!val('md-date')||!val('md-time'))return fail('md-err','Cargá el día y la hora de la primera dosis.');
+      const[h,mi]=val('md-time').split(':').map(Number);first=pd(val('md-date'))+h*H+mi*6e4;
+      if(SH.dur==='fin'){const dd=parseInt(val('md-days'));if(!(dd>=1))return fail('md-err','Indicá cuántos días dura el tratamiento.');end=first+dd*D;} }
+    const st=val('md-stock'),o={name,who:val('md-who'),qty,unit:val('md-unit'),mode,every,first,end,food:val('md-food'),notes:val('md-notes'),stock:st===''?null:Math.max(0,parseInt(st)||0),stockMin:parseInt(val('md-min'))||0};
+    if(SH.m){const m=SH.m,re=m.first!==first||m.every!==every||m.mode!==mode;Object.assign(m,o);if(re)m.base=first;delete m.demo;}
+    else S.meds.push(Object.assign({id:uid(),base:first,logs:[]},o));
+    closeSheet();render();toast('Medicamento guardado')},
+  vax(d){shVax(S.vax.find(x=>x.id===d.v))},
+  saveVax(){const v=SH.v,date=val('vx-date');if(!date)return fail('vx-err','Elegí la fecha.');if(date>iso(Date.now()))return fail('vx-err','La fecha no puede ser futura.');
+    const fin=()=>{v.lot=val('vx-lot');if(v.recur)v.last=date;else{v.applied=true;v.date=date}closeSheet();render();toast('Vacuna guardada')};
+    const f=document.getElementById('vx-photo').files[0];
+    if(f){const r=new FileReader();r.onload=()=>{v.photo=r.result;fin()};r.onerror=fin;r.readAsDataURL(f)}else fin()},
+  unVax(){const v=SH.v;if(v.recur)v.last='';else{v.applied=false;v.date=''}closeSheet();render()},
+  saveNewVax(){const name=val('nv-name');if(!name)return fail('nv-err','Escribí el nombre de la vacuna.');
+    S.vax.push({id:uid(),who:val('nv-who'),name,dose:val('nv-dose')||'Dosis',age:'',due:val('nv-due'),until:null,applied:false,date:'',lot:'',photo:'',custom:true});closeSheet();render();toast('Vacuna agregada')},
+  editTur(d){shTur(S.turnos.find(x=>x.id===d.id))},
+  saveTur(){const what=val('tu-what');if(!what)return fail('tu-err','Escribí el motivo del turno.');if(!val('tu-date'))return fail('tu-err','Elegí el día.');
+    const o={who:val('tu-who'),what,prof:val('tu-prof'),place:val('tu-place'),date:val('tu-date'),time:val('tu-time'),notes:val('tu-notes')};
+    if(SH.t){Object.assign(SH.t,o);delete SH.t.demo}else S.turnos.push(Object.assign({id:uid()},o));closeSheet();render();toast('Turno guardado')},
+  editHis(d){shHis(S.hist.find(x=>x.id===d.id))},
+  turToHis(){const t=SH.t;shHis(null,{who:t.who,type:'consulta',date:t.date,title:t.what,prof:t.prof,notes:t.notes,turno:t.id})},
+  rmFile(d){SH.files.splice(+d.i,1);$('#hs-flist').innerHTML=fileList()},
+  saveHis(){const title=val('hs-title');if(!title)return fail('hs-err','Escribí un título o motivo.');if(!val('hs-date'))return fail('hs-err','Elegí la fecha.');
+    const o={who:val('hs-who'),type:val('hs-type'),date:val('hs-date'),title,esp:val('hs-esp'),prof:val('hs-prof'),notes:val('hs-notes'),files:SH.files};
+    if(SH.e){Object.assign(SH.e,o);delete SH.e.demo}else{const n=Object.assign({id:uid()},o);S.hist.push(n);const t=SH.preset&&S.turnos.find(x=>x.id===SH.preset.turno);if(t)t.hist=n.id}
+    closeSheet();render();toast('Entrada guardada')},
+  resumen(d){const p=P(d.id),L=[p.name+(p.birth?' · nació el '+fd(p.birth):'')],desc=(a,b)=>a.date<b.date?1:-1;
+    [['Obra social',[p.os,p.afil].filter(Boolean).join(' · ')],['Grupo sanguíneo',p.sangre],['Alergias',p.alergias],['Antecedentes',p.antecedentes],['Medicación habitual',p.habitual]].forEach(([k,v])=>L.push(k+': '+(v||'sin cargar')));
+    const ms=S.meds.filter(m=>m.who===p.id&&active(m));L.push('','Medicamentos en curso:');
+    ms.length?ms.forEach(m=>L.push('- '+m.name+', '+m.qty+' '+m.unit+(m.mode==='prn'?' si hace falta':' cada '+m.every+' h'))):L.push('- ninguno');
+    const hs=S.hist.filter(e=>e.who===p.id).sort(desc).slice(0,8);L.push('','Últimas entradas de la historia:');
+    hs.length?hs.forEach(e=>L.push('- '+fd(e.date)+' · '+HT[e.type]+': '+e.title+(e.notes?' ('+e.notes+')':''))):L.push('- ninguna');
+    SH={k:'res',text:L.join('\n')};
+    sheet('Resumen de '+p.name,`<div class="pre">${esc(SH.text)}</div><button class="btn" data-act="copyRes">Copiar resumen</button><p class="foot" style="margin:0">En la app publicada este resumen sale como PDF para llevar a la consulta.</p>`)},
+  copyRes(){(navigator.clipboard?navigator.clipboard.writeText(SH.text):Promise.reject()).then(()=>toast('Resumen copiado')).catch(()=>toast('Mantené apretado el texto para copiarlo'))},
+  editCtl(d){shCtl(S.controles.find(x=>x.id===d.id))},
+  saveCtl(){if(!val('ct-date'))return fail('ct-err','Elegí la fecha.');if(!val('ct-peso')&&!val('ct-talla'))return fail('ct-err','Cargá el peso o la talla.');
+    const o={who:val('ct-who'),date:val('ct-date'),peso:val('ct-peso'),talla:val('ct-talla'),notes:val('ct-notes')};
+    if(SH.c){Object.assign(SH.c,o);delete SH.c.demo}else S.controles.push(Object.assign({id:uid()},o));closeSheet();render();toast('Control guardado')},
+  editP(d){shP(d.id?S.people.find(x=>x.id===d.id):null)},
+  saveP(){const name=val('pp-name');if(!name)return fail('pp-err','Escribí el nombre.');
+    const o={name,birth:val('pp-birth'),os:val('pp-os'),afil:val('pp-afil'),sangre:val('pp-sangre'),medico:val('pp-medico'),tel:val('pp-tel'),alergias:val('pp-alergias'),antecedentes:val('pp-antecedentes'),habitual:val('pp-habitual')};
+    if(SH.p)Object.assign(SH.p,o);else{const cal=val('pp-cal');if(cal==='child'&&!o.birth)return fail('pp-err','Para precargar el calendario hace falta la fecha de nacimiento.');
+      const p=Object.assign({id:uid(),color:COLORS[S.people.length%COLORS.length]},o);S.people.push(p);
+      if(cal==='child')S.vax.push(...childVax(p.id,p.birth,-1));if(cal==='adult')S.vax.push(...adultVax(p.id));}
+    closeSheet();render();toast('Ficha guardada')},
+  del(_,btn){ if(!SH.del){SH.del=true;btn.textContent='Tocá de nuevo para confirmar';return}
+    if(SH.k==='med')S.meds=S.meds.filter(x=>x!==SH.m);
+    if(SH.k==='vax')S.vax=S.vax.filter(x=>x!==SH.v);
+    if(SH.k==='tur')S.turnos=S.turnos.filter(x=>x!==SH.t);
+    if(SH.k==='ctl')S.controles=S.controles.filter(x=>x!==SH.c);
+    if(SH.k==='his'){const id=SH.e.id;S.hist=S.hist.filter(x=>x!==SH.e);S.turnos.forEach(t=>{if(t.hist===id)delete t.hist})}
+    if(SH.k==='p'){const id=SH.p.id;S.people=S.people.filter(x=>x.id!==id);['meds','vax','turnos','controles','hist'].forEach(k=>S[k]=S[k].filter(x=>x.who!==id));if(S.filter===id)S.filter='all'}
+    closeSheet();render();toast('Eliminado')},
+  clearDemo(){S.meds=S.meds.filter(x=>!x.demo);S.turnos=S.turnos.filter(x=>!x.demo);S.controles=S.controles.filter(x=>!x.demo);S.hist=S.hist.filter(x=>!x.demo);S.demo=false;render();toast('Ejemplos borrados')},
+  reset(_,btn){ if(!btn.dataset.sure){btn.dataset.sure=1;btn.textContent='Tocá de nuevo para borrar todo y volver a los ejemplos';return} S=seed();S.tab='cfg';render();toast('Datos restablecidos')},
+  share(){const u=location.href;(navigator.share?navigator.share({title:'DocApp',text:'DocApp, la salud de la familia',url:u}):Promise.reject()).then(()=>{}).catch(e=>{if(e&&e.name==='AbortError')return;return (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Enlace copiado')).catch(()=>toast('Copiá el enlace desde la barra del navegador'))})}
+};
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button,[data-close]'); if(!b)return;
+  if(b.dataset.close&&e.target===b||b.classList.contains('x')){closeSheet();return}
+  const d=b.dataset;
+  if(d.f){S.filter=d.f;render()}
+  else if(d.tab){S.tab=d.tab;render();window.scrollTo(0,0)}
+  else if(d.seg){const[k,v]=d.seg.split(':');S[k]=v;render()}
+  else if(d.me){S.me=d.me;render()}
+  else if(d.ht){S.hisType=d.ht;render()}
+  else if(d.accent){S.accent=d.accent;render()}
+  else if(d.when){if(d.when==='custom'&&SH.when!=='custom')SH.custom=Date.now();SH.when=d.when;shTake()}
+  else if(d.mode){SH.mode=d.mode;shTake()}
+  else if(d.mdmode){SH.mode=d.mdmode;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-sched').hidden=SH.mode==='prn';$('#md-every-l').textContent=SH.mode==='prn'?'Intervalo mínimo entre dosis (horas)':'Cada cuántas horas'}
+  else if(d.mddur){SH.dur=d.mddur;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-days-w').hidden=SH.dur!=='fin'}
+  else if(d.act&&ACT[d.act])ACT[d.act](d,b);
+  else if(b.id==='fab'){ if(S.tab==='vac')shNewVax(); else if(S.tab==='his')shHis(); else if(S.tab==='tur')(S.turSeg==='turnos'?shTur():shCtl()); else shMed(); }
+});
+document.addEventListener('change',e=>{ if(e.target.id==='tk-time'&&SH&&SH.k==='take'){const[h,m]=e.target.value.split(':').map(Number);if(!isNaN(h)){SH.custom=sod(Date.now())+h*H+m*6e4;shTake()}} });
+document.addEventListener('input',e=>{if(e.target.id==='his-q'){S.hisQ=e.target.value;$('#his-list').innerHTML=hisList();save()}});
+document.addEventListener('change',e=>{if(e.target.id==='hs-files'&&SH&&SH.k==='his'){[...e.target.files].forEach(f=>SH.files.push({name:f.name,size:f.size}));e.target.value='';$('#hs-flist').innerHTML=fileList()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+render();
+setInterval(()=>{if(!SH&&S.tab==='hoy')render()},60000);
+</script>
+
+</body>
+</html>
