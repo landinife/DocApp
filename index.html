@@ -10,6 +10,9 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
@@ -134,6 +137,11 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 .err{color:var(--danger);font-size:13px;font-weight:600}
 .foot{font-size:12.5px;color:var(--muted);text-align:center}
 .foot a{color:var(--accent)}
+.gate{position:fixed;inset:0;z-index:30;background:var(--bg);display:grid;place-items:center;padding:24px}
+.gate-card{max-width:340px;width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.gate-card svg{width:84px;height:84px}
+.gate-card h2{font-size:28px}
+.gate-card p{margin:0;color:var(--muted);overflow-wrap:anywhere}
 .brand h1 span{color:var(--accent)}
 :root[data-accent="blue"]{--accent:light-dark(#2F62C9,#86ABF5);--accent-soft:light-dark(#DDE7FA,#1A2C52);--brand:#4C7FE6;--on-accent:light-dark(#FFFFFF,#0B1424)}
 :root[data-accent="violet"]{--accent:light-dark(#7046C4,#B49BF0);--accent-soft:light-dark(#E9E1F8,#2E2350);--brand:#8B63DB;--on-accent:light-dark(#FFFFFF,#150E28)}
@@ -146,6 +154,12 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
 </style>
 
+<div id="gate" class="gate"><div class="gate-card">
+  <svg viewBox="0 0 140 140" aria-hidden="true"><rect width="140" height="140" rx="32" style="fill:var(--brand)"/><path d="M70 28 114 66H26Z" fill="#fff" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><rect x="38" y="60" width="64" height="52" rx="7" fill="#fff"/><rect x="64" y="68" width="12" height="36" rx="3" style="fill:var(--brand)"/><rect x="52" y="80" width="36" height="12" rx="3" style="fill:var(--brand)"/></svg>
+  <h2>DocApp</h2><p id="gate-msg">Cargando…</p>
+  <button class="btn" id="gate-in" data-act="login" hidden>Iniciar sesión con Google (Sign in with Google)</button>
+  <button class="btn ghost" id="gate-out" data-act="logout" hidden>Usar otra cuenta (Sign out)</button>
+</div></div>
 <div class="app">
   <header class="top">
     <div class="brand">
@@ -250,10 +264,21 @@ function seed(){
     turnos:[{id:uid(),who:'fabri',what:'Consulta con el clínico',prof:'',place:'',date:iso(t0-6*D),time:'17:00',notes:'',demo:true},{id:uid(),who:'juli',what:'Control pediátrico',prof:'',place:'',date:iso(t0+10*D),time:'10:30',notes:'Llevar el carnet de vacunas.',demo:true}],
     controles:[{id:uid(),who:'juli',date:iso(t0-40*D),peso:'9.8',talla:'75',notes:'',demo:true},{id:uid(),who:'juli',date:iso(t0-130*D),peso:'8.6',talla:'70',notes:'',demo:true}]};
 }
-let S;
-try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}
-if(!S||S.v!==2)S=seed();
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const COLS={people:'doc_people',meds:'doc_meds',vax:'doc_vax',turnos:'doc_turnos',controles:'doc_controles',hist:'doc_hist'};
+const UIK=['me','filter','tab','medSeg','turSeg','hisType','hisQ','accent'];
+let S={v:3,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:false,people:[],meds:[],vax:[],turnos:[],controles:[],hist:[]};
+try{const u=JSON.parse(localStorage.getItem(KEY+'-ui')||'{}');UIK.forEach(k=>{if(u[k]!=null)S[k]=u[k]})}catch(e){}
+let db=null,auth=null,HOG=null,CACHE={},READY=false,USER=null,UNSUB=[];
+function save(){
+  try{const u={};UIK.forEach(k=>u[k]=S[k]);localStorage.setItem(KEY+'-ui',JSON.stringify(u))}catch(e){}
+  if(!HOG||!READY)return;
+  const batch=db.batch();let n=0;
+  for(const k in COLS){const col=HOG.collection(COLS[k]),c=CACHE[k]||(CACHE[k]={}),seen={};
+    S[k].forEach((it,i)=>{if(!it.id)it.id=uid();seen[it.id]=1;const j=JSON.stringify(Object.assign({},it,{_o:i}));if(c[it.id]!==j){c[it.id]=j;batch.set(col.doc(it.id),JSON.parse(j));n++}});
+    Object.keys(c).forEach(id=>{if(!seen[id]){delete c[id];batch.delete(col.doc(id));n++}});
+  }
+  if(n)batch.commit().catch(e=>toast('No se pudo guardar: '+(e.code||e.message)));
+}
 const P=id=>S.people.find(p=>p.id===id)||{name:'?',color:'--p-violet'};
 const show=x=>S.filter==='all'||x.who===S.filter;
 const who=id=>`<span class="who" style="--c:var(${P(id).color})">${esc(P(id).name)}</span>`;
@@ -397,19 +422,19 @@ function vTur(){
 }
 function vCfg(){
   return `<section class="sec"><div class="sec-h"><h2>Integrantes</h2><button class="btn sm ghost" data-act="editP" data-id="">Agregar</button></div><div class="list">${S.people.map(p=>`<button class="row" data-act="editP" data-id="${p.id}"><span class="av lg" style="--c:var(${p.color})">${esc(p.name[0])}</span><span class="body"><span class="t1">${esc(p.name)}</span><span class="t2"><span>${p.birth?'Nació el '+fd(p.birth):'Sin fecha de nacimiento'}</span><span>${p.os?esc(p.os):'Obra social sin cargar'}</span></span></span></button>`).join('')}</div></section>
-  <section class="sec"><h2>Quién usa este teléfono</h2><div class="seg" role="group">${S.people.filter(p=>p.id==='fabri'||p.id==='euge').map(p=>`<button data-me="${p.id}" aria-pressed="${S.me===p.id}">${esc(p.name)}</button>`).join('')}</div><p class="foot" style="text-align:left;margin:0">En la app real esto sale del inicio de sesión con Google (Sign in with Google). Cada toma queda marcada con el nombre de quien la tildó.</p></section>
+  <section class="sec"><h2>Quién usa este teléfono</h2><div class="seg" role="group">${S.people.filter(p=>p.id==='fabri'||p.id==='euge').map(p=>`<button data-me="${p.id}" aria-pressed="${S.me===p.id}">${esc(p.name)}</button>`).join('')}</div><p class="foot" style="text-align:left;margin:0">Se recuerda con tu cuenta de Google. Cada toma queda marcada con el nombre de quien la tildó.</p></section>
   <section class="sec"><h2>Color de énfasis</h2><div class="sws" role="group" aria-label="Color de énfasis">${[['teal','Verde agua','#1FB5A3'],['blue','Azul','#4C7FE6'],['violet','Violeta','#8B63DB'],['coral','Coral','#E0624F'],['amber','Ámbar','#D9972B']].map(([k,t,c])=>`<button class="sw" style="--c:${c}" data-accent="${k}" aria-label="${t}" aria-pressed="${(S.accent||'teal')===k}"></button>`).join('')}</div></section>
   <section class="sec"><h2>Emergencias</h2><div class="list"><div class="row"><span class="body"><span class="t1">Emergencias médicas</span></span><b style="user-select:all">107</b></div><div class="row"><span class="body"><span class="t1">Emergencias generales</span></span><b style="user-select:all">911</b></div>${S.people.filter(p=>p.medico||p.tel).map(p=>`<div class="row"><span class="body"><span class="t1">${esc(p.medico||'Médico')}</span><span class="t2">${who(p.id)}</span></span><b style="user-select:all">${esc(p.tel)}</b></div>`).join('')}</div></section>
   <section class="sec"><h2>Cuenta y avisos</h2><div class="stack">
-    <button class="btn ghost" disabled>Iniciar sesión con Google (Sign in with Google)</button>
+    <div class="sum" style="box-shadow:none;border:1px solid var(--line)"><span class="label">Sesión iniciada</span><b style="overflow-wrap:anywhere">${esc(USER?USER.email:"")}</b></div><button class="btn ghost" data-act="logout">Cerrar sesión (Sign out)</button>
     <button class="btn ghost" disabled>Notificaciones de tomas (Notifications)</button>
     <button class="btn ghost" disabled>Leer turnos del calendario Salud (Google Calendar)</button>
     <button class="btn ghost" disabled>Carpeta de estudios en Google Drive</button>
-    <p class="foot" style="text-align:left;margin:0">Estas funciones se activan al publicar: el inicio de sesión y la sincronización con Euge van con Firebase, el calendario y Drive piden un permiso de Google, y los avisos a la hora exacta llegan con la versión Android.</p>
+    <p class="foot" style="text-align:left;margin:0">Los datos ya se sincronizan entre los teléfonos de la familia. Falta conectar el calendario Salud y la carpeta de Drive, y los avisos a la hora exacta llegan con la versión Android.</p>
     <button class="btn" data-act="share">Compartir la app (Share)</button>
     ${S.demo?'<button class="btn ghost" data-act="clearDemo">Borrar los datos de ejemplo</button>':''}
-    <button class="btn danger" data-act="reset">Borrar todo y volver a los ejemplos</button></div></section>
-  <p class="foot">DocApp · versión web · por ahora los datos se guardan solo en este teléfono</p>`;
+    </div></section>
+  <p class="foot">DocApp · versión web · datos sincronizados con la familia</p>`;
 }
 function hisList(){
   const q=(S.hisQ||'').toLowerCase();
@@ -533,7 +558,7 @@ function shHis(e,preset){
     <label class="f"><span>Resumen</span><textarea id="hs-notes" placeholder="Qué dijo el médico, resultados, indicaciones">${esc(v.notes)}</textarea></label>
     <div class="stack"><span class="label">Archivos adjuntos</span><div id="hs-flist">${fileList()}</div>
     <label class="f"><span>Agregar estudios, fotos o PDF</span><input id="hs-files" type="file" multiple accept="image/*,application/pdf"></label>
-    <p class="foot" style="text-align:left;margin:0">En la app publicada se suben a la carpeta de Google Drive. Acá solo queda el nombre, como muestra.</p></div>
+    <p class="foot" style="text-align:left;margin:0">Hasta conectar Google Drive, de cada archivo solo queda el nombre.</p></div>
     <div class="err" id="hs-err" hidden></div><button class="btn" data-act="saveHis">Guardar</button>${e?'<button class="btn danger" data-act="del">Eliminar entrada</button>':''}`);
 }
 function shCtl(c){
@@ -584,7 +609,7 @@ const ACT={
   saveVax(){const v=SH.v,date=val('vx-date');if(!date)return fail('vx-err','Elegí la fecha.');if(date>iso(Date.now()))return fail('vx-err','La fecha no puede ser futura.');
     const fin=()=>{v.lot=val('vx-lot');if(v.recur)v.last=date;else{v.applied=true;v.date=date}closeSheet();render();toast('Vacuna guardada')};
     const f=document.getElementById('vx-photo').files[0];
-    if(f){const r=new FileReader();r.onload=()=>{v.photo=r.result;fin()};r.onerror=fin;r.readAsDataURL(f)}else fin()},
+    if(f){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1100/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);v.photo=c.toDataURL('image/jpeg',.6);fin()};im.onerror=fin;im.src=r.result};r.onerror=fin;r.readAsDataURL(f)}else fin()},
   unVax(){const v=SH.v;if(v.recur)v.last='';else{v.applied=false;v.date=''}closeSheet();render()},
   saveNewVax(){const name=val('nv-name');if(!name)return fail('nv-err','Escribí el nombre de la vacuna.');
     S.vax.push({id:uid(),who:val('nv-who'),name,dose:val('nv-dose')||'Dosis',age:'',due:val('nv-due'),until:null,applied:false,date:'',lot:'',photo:'',custom:true});closeSheet();render();toast('Vacuna agregada')},
@@ -606,7 +631,7 @@ const ACT={
     const hs=S.hist.filter(e=>e.who===p.id).sort(desc).slice(0,8);L.push('','Últimas entradas de la historia:');
     hs.length?hs.forEach(e=>L.push('- '+fd(e.date)+' · '+HT[e.type]+': '+e.title+(e.notes?' ('+e.notes+')':''))):L.push('- ninguna');
     SH={k:'res',text:L.join('\n')};
-    sheet('Resumen de '+p.name,`<div class="pre">${esc(SH.text)}</div><button class="btn" data-act="copyRes">Copiar resumen</button><p class="foot" style="margin:0">En la app publicada este resumen sale como PDF para llevar a la consulta.</p>`)},
+    sheet('Resumen de '+p.name,`<div class="pre">${esc(SH.text)}</div><button class="btn" data-act="copyRes">Copiar resumen</button><p class="foot" style="margin:0">Copialo y pegalo en un mensaje o una nota para llevar a la consulta.</p>`)},
   copyRes(){(navigator.clipboard?navigator.clipboard.writeText(SH.text):Promise.reject()).then(()=>toast('Resumen copiado')).catch(()=>toast('Mantené apretado el texto para copiarlo'))},
   editCtl(d){shCtl(S.controles.find(x=>x.id===d.id))},
   saveCtl(){if(!val('ct-date'))return fail('ct-err','Elegí la fecha.');if(!val('ct-peso')&&!val('ct-talla'))return fail('ct-err','Cargá el peso o la talla.');
@@ -628,7 +653,7 @@ const ACT={
     if(SH.k==='p'){const id=SH.p.id;S.people=S.people.filter(x=>x.id!==id);['meds','vax','turnos','controles','hist'].forEach(k=>S[k]=S[k].filter(x=>x.who!==id));if(S.filter===id)S.filter='all'}
     closeSheet();render();toast('Eliminado')},
   clearDemo(){S.meds=S.meds.filter(x=>!x.demo);S.turnos=S.turnos.filter(x=>!x.demo);S.controles=S.controles.filter(x=>!x.demo);S.hist=S.hist.filter(x=>!x.demo);S.demo=false;render();toast('Ejemplos borrados')},
-  reset(_,btn){ if(!btn.dataset.sure){btn.dataset.sure=1;btn.textContent='Tocá de nuevo para borrar todo y volver a los ejemplos';return} S=seed();S.tab='cfg';render();toast('Datos restablecidos')},
+  reset(_,btn){ if(!btn.dataset.sure){btn.dataset.sure=1;btn.textContent='Tocá de nuevo para borrar todo y volver a los ejemplos';return} S=seed();S.tab='cfg';render();toast('Vista previa restablecida')},
   share(){const u=location.href;(navigator.share?navigator.share({title:'DocApp',text:'DocApp, la salud de la familia',url:u}):Promise.reject()).then(()=>{}).catch(e=>{if(e&&e.name==='AbortError')return;return (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Enlace copiado')).catch(()=>toast('Copiá el enlace desde la barra del navegador'))})}
 };
 document.addEventListener('click',e=>{
@@ -638,7 +663,7 @@ document.addEventListener('click',e=>{
   if(d.f){S.filter=d.f;render()}
   else if(d.tab){S.tab=d.tab;render();window.scrollTo(0,0)}
   else if(d.seg){const[k,v]=d.seg.split(':');S[k]=v;render()}
-  else if(d.me){S.me=d.me;render()}
+  else if(d.me){S.me=d.me;if(USER)S.people.forEach(p=>{if(p.id===d.me)p.email=USER.email;else if(p.email===USER.email)delete p.email});render()}
   else if(d.ht){S.hisType=d.ht;render()}
   else if(d.accent){S.accent=d.accent;render()}
   else if(d.when){if(d.when==='custom'&&SH.when!=='custom')SH.custom=Date.now();SH.when=d.when;shTake()}
@@ -653,6 +678,54 @@ document.addEventListener('input',e=>{if(e.target.id==='his-q'){S.hisQ=e.target.
 document.addEventListener('change',e=>{if(e.target.id==='hs-files'&&SH&&SH.k==='his'){[...e.target.files].forEach(f=>SH.files.push({name:f.name,size:f.size}));e.target.value='';$('#hs-flist').innerHTML=fileList()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 render();
+/* ---------- cuenta y sincronización ---------- */
+function gate(st,e){
+  $('#gate').hidden=st==='in';
+  $('#gate-msg').textContent={load:'Cargando tus datos…',out:'Entrá con tu cuenta de Google para ver la salud de la familia.',
+    nohogar:'Tu cuenta ('+(USER?USER.email:'')+') no está en el hogar de la familia. Hay que agregar ese mail al hogar desde GastosApp.',
+    err:'No se pudo conectar ('+((e&&(e.code||e.message))||'error desconocido')+'). Revisá la conexión y probá de nuevo.'}[st]||'';
+  $('#gate-in').hidden=!!USER||st==='load'||st==='in';
+  $('#gate-out').hidden=!USER||st==='load'||st==='in';
+}
+function listen(){
+  let pend=Object.keys(COLS).length;
+  for(const k in COLS){let first=true;
+    UNSUB.push(HOG.collection(COLS[k]).onSnapshot(snap=>{
+      const docs=snap.docs.map(d=>d.data()).sort((a,b)=>(a._o||0)-(b._o||0)),byId={};
+      S[k].forEach(it=>byId[it.id]=it);
+      S[k]=docs.map(d=>{const cur=byId[d.id]||{};Object.keys(cur).forEach(x=>delete cur[x]);Object.assign(cur,d);delete cur._o;return cur});
+      const c=CACHE[k]={};S[k].forEach((it,i)=>c[it.id]=JSON.stringify(Object.assign({},it,{_o:i})));
+      if(first){first=false;if(!--pend)ready()}else if(READY)render();
+    },e=>gate('err',e)));
+  }
+}
+async function ready(){
+  try{
+    const ref=HOG.collection('doc_meta').doc('init'),meta=await ref.get();
+    READY=true;
+    if(!meta.exists){const s=seed();S.people=s.people;S.vax=s.vax;await ref.set({v:1,at:Date.now(),by:USER.email})}
+  }catch(e){READY=false;gate('err',e);return}
+  const p=S.people.find(p=>p.email===USER.email);if(p)S.me=p.id;
+  gate('in');render();
+}
+function stopSync(){UNSUB.forEach(f=>f());UNSUB=[];HOG=null;READY=false;CACHE={};for(const k in COLS)S[k]=[]}
+ACT.login=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{if(e&&e.code==='auth/popup-closed-by-user')return;gate('err',e)});
+ACT.logout=()=>{closeSheet();stopSync();auth.signOut()};
+if(!window.firebase)gate('err',{message:'no se cargó Firebase'});
+else{
+  firebase.initializeApp({apiKey:"AIzaSyDdxEhE0RCy3PZTg1Z4kJV-zthDWTPNUxo",authDomain:"fliaapp.firebaseapp.com",projectId:"fliaapp",storageBucket:"fliaapp.firebasestorage.app",messagingSenderId:"61849110057",appId:"1:61849110057:web:2c3b0baa3ae61e5b3c3e38"});
+  auth=firebase.auth();db=firebase.firestore();
+  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  auth.onAuthStateChanged(async u=>{
+    USER=u;stopSync();
+    if(!u){gate('out');render();return}
+    gate('load');
+    try{const q=await db.collection('hogares').where('emails','array-contains',u.email).limit(1).get();
+      if(q.empty){gate('nohogar');return}
+      HOG=q.docs[0].ref;listen();
+    }catch(e){gate('err',e)}
+  });
+}
 setInterval(()=>{if(!SH&&S.tab==='hoy')render()},60000);
 </script>
 
