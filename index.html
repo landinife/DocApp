@@ -470,11 +470,14 @@ function vVac(){
     const vs=S.vax.filter(v=>v.who===p.id); if(!vs.length){h+=`<section class="sec"><h2>${esc(p.name)}</h2><div class="list"><div class="empty">Sin vacunas cargadas. Tocá + para agregar.</div></div></section>`;return}
     const pend=vs.filter(v=>v.recur?!v.last:!v.applied).length;
     h+=`<section class="sec"><div class="sec-h"><h2>${esc(p.name)}</h2><span class="count">${pend} por aplicar o confirmar</span></div>`;
-    const groups=[];vs.forEach(v=>{const k=v.age||'';let g=groups.find(g=>g.k===k);if(!g)groups.push(g={k,due:v.due,until:v.until,items:[]});g.items.push(v)});
+    const grp=list=>{const groups=[];list.forEach(v=>{const k=v.age||'';let g=groups.find(g=>g.k===k);if(!g)groups.push(g={k,due:v.due,until:v.until,items:[]});g.items.push(v)});
     groups.forEach(g=>{
       if(g.k)h+=`<div class="sec-h" style="margin-top:6px"><span class="label">${esc(g.k)}</span><span class="count">${g.due?(g.until?`${fd(g.due)} al ${fd(g.until)}`:fd(g.due)):''}</span></div>`;
       h+=`<div class="list">${g.items.map(v=>{const s=vst(v);return `<button class="row ${s.k==='ok'&&!v.recur?'done':''}" data-act="vax" data-v="${v.id}"><span class="body"><span class="t1">${esc(v.name)}</span><span class="t2"><span>${esc(v.dose)}</span>${!g.k&&v.due&&!v.applied?`<span>${fd(v.due)}</span>`:''}${v.lot?`<span>Lote ${esc(v.lot)}</span>`:''}</span></span><span class="pill ${s.k}">${s.t}</span></button>`}).join('')}</div>`;
-    });
+    });};
+    const done=vs.filter(v=>!v.recur&&v.applied),todo=vs.filter(v=>v.recur||!v.applied),open=(window.VOPEN||{})[p.id];
+    if(todo.length)grp(todo);else h+=`<div class="list"><div class="empty">Todo al día: no hay vacunas pendientes.</div></div>`;
+    if(done.length){h+=`<button class="btn ghost" data-vopen="${p.id}" aria-expanded="${!!open}">${open?'Ocultar las aplicadas':done.length===1?'Ver la vacuna aplicada':'Ver las '+done.length+' aplicadas'}</button>`;if(open)grp(done)}
     h+=`</section>`;
   });
   return h;
@@ -826,6 +829,7 @@ document.addEventListener('click',e=>{
   else if(d.me){S.me=d.me;if(USER)S.people.forEach(p=>{if(p.id===d.me)p.email=USER.email;else if(p.email===USER.email)delete p.email});render()}
   else if(d.ht){S.hisType=d.ht;render()}
   else if(d.accent){S.accent=d.accent;render()}
+  else if(d.vopen){window.VOPEN=window.VOPEN||{};window.VOPEN[d.vopen]=!window.VOPEN[d.vopen];render()}
   else if(d.cnav){const td=iso(Date.now()),[y,m]=(window.CICM||td.slice(0,7)).split('-').map(Number),n=new Date(y,m-1+(+d.cnav),1);window.CICM=n.getFullYear()+'-'+pad(n.getMonth()+1);render()}
   else if(d.cflow){SH.notes=val('cc-notes');SH.flow=+d.cflow;shCic(SH.who,SH.date)}
   else if(d.cs||d.cm){const k=d.cs?'sym':'mood',t=d.cs||d.cm,i=SH[k].indexOf(t);i>=0?SH[k].splice(i,1):SH[k].push(t);b.setAttribute('aria-pressed',i<0)}
