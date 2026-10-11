@@ -913,7 +913,7 @@ ACT.saveHis=async(d,b)=>{
   const lbl=b.textContent;b.disabled=true;b.textContent='Subiendo a Google Drive…';$('#hs-err').hidden=true;
   try{
     const tok=await gtoken('https://www.googleapis.com/auth/drive'),folder=await personFolder(tok,who);
-    const base=date.slice(2,4)+date.slice(5,7)+' - '+cap(title).replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
+    const base=date.slice(2,4)+date.slice(5,7)+' - '+cap(title.replace(/^\d{4}\s*[-–]\s*/,'')).replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
     for(const f of pend){
       const {blob,ext}=await shrink(f._f),i=SH.files.indexOf(f),name=base+(SH.files.length>1?' '+(i+1):'')+ext;
       b.textContent='Subiendo '+(pend.indexOf(f)+1)+' de '+pend.length+'…';
