@@ -23,6 +23,7 @@
   --accent:#0C8A7B; --accent-soft:#D6F0EC; --on-accent:#FFFFFF; --brand:#1FB5A3;
   --ok:#1E8A4C; --ok-soft:#DDF2E4; --warn:#A8650A; --warn-soft:#FBEBCF; --danger:#BC3B33; --danger-soft:#FADFDC;
   --p-blue:#3466C9; --p-pink:#C9487A; --p-amber:#B97A12; --p-violet:#7A55C7; --p-green:#3B8F4F;
+  --per:#BE3A66; --per-1:#FBDCE6; --per-2:#E98DAB; --on-per-2:#4A0F25; --on-per:#FFFFFF;
   --font-display:"Bricolage Grotesque","Figtree",system-ui,sans-serif;
   --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --r:14px; --shadow:0 1px 2px rgba(16,46,42,.06),0 6px 18px rgba(16,46,42,.06);
@@ -32,12 +33,14 @@
   --accent:#3CCBB8; --accent-soft:#12403A; --on-accent:#06211D; --brand:#1FB5A3;
   --ok:#5BD08A; --ok-soft:#143524; --warn:#F0B354; --warn-soft:#3D2C0C; --danger:#F2857D; --danger-soft:#41201D;
   --p-blue:#7FA5F2; --p-pink:#EE86AD; --p-amber:#E5B052; --p-violet:#B097EE; --p-green:#78C98A;
+  --per:#F08BAA; --per-1:#4A1F2E; --per-2:#A8456A; --on-per-2:#FFFFFF; --on-per:#2A0A16;
   --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#0C1716; --surface:#152321; --surface-2:#1D2F2C; --ink:#E6F2EF; --muted:#93ABA6; --line:#29403C;
   --accent:#3CCBB8; --accent-soft:#12403A; --on-accent:#06211D; --brand:#1FB5A3;
   --ok:#5BD08A; --ok-soft:#143524; --warn:#F0B354; --warn-soft:#3D2C0C; --danger:#F2857D; --danger-soft:#41201D;
   --p-blue:#7FA5F2; --p-pink:#EE86AD; --p-amber:#E5B052; --p-violet:#B097EE; --p-green:#78C98A;
+  --per:#F08BAA; --per-1:#4A1F2E; --per-2:#A8456A; --on-per-2:#FFFFFF; --on-per:#2A0A16;
   --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
@@ -88,6 +91,24 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 .mi{flex:none;width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
 .mi svg{width:19px;height:19px}
 .row.done .mi,.row.skip .mi{background:var(--surface-2);color:var(--muted)}
+.chipw{display:flex;flex-wrap:wrap;gap:8px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .dow{font-size:11px;font-weight:700;color:var(--muted);text-align:center;padding:2px 0}
+.cd{aspect-ratio:1;border-radius:10px;display:grid;place-items:center;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;position:relative;background:var(--surface-2);min-width:0}
+.cd.out{visibility:hidden}
+.cd.fe{background:var(--accent-soft);color:var(--accent)}
+.cd.ov{box-shadow:inset 0 0 0 2px var(--accent)}
+.cd.pp{background:transparent;border:1.5px dashed var(--per);color:var(--per)}
+.cd.f1{background:var(--per-1);color:var(--per)} .cd.f2{background:var(--per-2);color:var(--on-per-2)} .cd.f3{background:var(--per);color:var(--on-per)}
+.cd.today{outline:2px solid var(--ink);outline-offset:1px}
+.cd i{position:absolute;bottom:4px;width:5px;height:5px;border-radius:50%;background:currentColor}
+.calh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calh b{font-family:var(--font-display);font-size:17px}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.leg .cd{width:16px;aspect-ratio:1;border-radius:5px}
+.chk{display:flex;align-items:center;gap:10px;font-weight:600}
+.chk input{width:20px;height:20px;accent-color:var(--accent)}
 .tag{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--line);border-radius:5px;padding:0 5px}
 .note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-soft);color:var(--warn);border-radius:var(--r);padding:10px 14px;font-size:13.5px;font-weight:500}
 .note.info{background:var(--accent-soft);color:var(--accent)}
@@ -106,8 +127,8 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .empty{padding:22px 16px;text-align:center;color:var(--muted);font-size:14px}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.nav div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
-.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 9px;font-size:11px;font-weight:600;color:var(--muted)}
+.nav div{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 1px 9px;font-size:10.5px;font-weight:600;color:var(--muted);min-width:0}
 .nav svg{width:22px;height:22px}
 .nav button[aria-current="page"]{color:var(--accent)}
 .fab{position:fixed;z-index:6;right:max(16px,calc(50% - 224px));bottom:calc(72px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:18px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 35%,transparent)}
@@ -191,6 +212,8 @@ const IC={
  vac:'<path d="M17 3l4 4M19 5l-2.5 2.5M14 6l4 4M15.5 7.5l-8 8-3 .5.5-3 8-8M4.5 16l-1.5 5M9 11l2 2"/>',
  tur:'<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
  cfg:'<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37 1 .608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>',
+ cic:'<path d="M12 3.2c3.2 3.8 5.8 6.9 5.8 10.4a5.8 5.8 0 0 1-11.6 0c0-3.5 2.6-6.6 5.8-10.4z"/>',
+ prev:'<path d="M14.5 6l-6 6 6 6"/>', next:'<path d="M9.5 6l6 6-6 6"/>',
  his:'<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 12.5h5M10 16.5h5"/>',
  u_tab:'<circle cx="12" cy="12" r="8.2"/><path d="M6.2 17.8L17.8 6.2"/>',
  u_ml:'<path d="M9.5 3h5v3.5h-5z"/><path d="M8 9a2.5 2.5 0 0 1 2.5-2.5h3A2.5 2.5 0 0 1 16 9v9.5a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/><path d="M8 12h8M8 16.5h8"/>',
@@ -251,7 +274,7 @@ function seed(){
   const now=Date.now(), t0=sod(now), at=(h,m=0,off=0)=>t0+off*D+h*H+m*6e4;
   const people=[
     {id:'fabri',name:'Fabri',color:'--p-blue',birth:'',os:'',afil:'',sangre:'',medico:'',tel:''},
-    {id:'euge',name:'Euge',color:'--p-pink',birth:'',os:'',afil:'',sangre:'',medico:'',tel:''},
+    {id:'euge',name:'Euge',color:'--p-pink',ciclo:true,birth:'',os:'',afil:'',sangre:'',medico:'',tel:''},
     {id:'juli',name:'Juli',color:'--p-amber',birth:'2025-07-19',os:'',afil:'',sangre:'',medico:'',tel:''}
   ];
   const mk=(o)=>Object.assign({id:uid(),mode:'sched',food:'',notes:'',stock:null,stockMin:3,end:null,logs:[],demo:true},o);
@@ -265,17 +288,21 @@ function seed(){
   meds.forEach(m=>{ if(m.mode!=='sched'||m.name==='Vitamina D')return;
     for(let s=m.base;s<now-20*6e4;s+=m.every*H) m.logs.push({s,t:s+5*6e4,by:m.who==='fabri'?'fabri':'euge',pb:m.base}); });
   meds[4].logs.push({s:at(3,10),t:at(3,10),by:'euge'});
-  return {v:2,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:true,people,meds,
+  return {v:3,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:true,people,meds,
     hist:[{id:uid(),who:'juli',type:'consulta',date:iso(t0-40*D),title:'Control del año',prof:'',esp:'Pediatría',notes:'Control de rutina.',files:[],demo:true},
       {id:uid(),who:'fabri',type:'estudio',date:iso(t0-95*D),title:'Análisis de rutina',prof:'',esp:'Laboratorio',notes:'',files:[{name:'laboratorio.pdf'}],demo:true},
       {id:uid(),who:'euge',type:'imagen',date:iso(t0-410*D),title:'Radiografía',prof:'',esp:'',notes:'',files:[{name:'placa-1.jpg'},{name:'informe.pdf'}],demo:true}],
     vax:[...childVax('juli','2025-07-19',12),...adultVax('fabri'),...adultVax('euge')],
     turnos:[{id:uid(),who:'fabri',what:'Consulta con el clínico',prof:'',place:'',date:iso(t0-6*D),time:'17:00',notes:'',demo:true},{id:uid(),who:'juli',what:'Control pediátrico',prof:'',place:'',date:iso(t0+10*D),time:'10:30',notes:'Llevar el carnet de vacunas.',demo:true}],
-    controles:[{id:uid(),who:'juli',date:iso(t0-40*D),peso:'9.8',talla:'75',notes:'',demo:true},{id:uid(),who:'juli',date:iso(t0-130*D),peso:'8.6',talla:'70',notes:'',demo:true}]};
+    controles:[{id:uid(),who:'juli',date:iso(t0-40*D),peso:'9.8',talla:'75',notes:'',demo:true},{id:uid(),who:'juli',date:iso(t0-130*D),peso:'8.6',talla:'70',notes:'',demo:true}],
+    sug:[{id:'s_juli_ped',who:'juli',what:'Control pediátrico',age:true,every:3,last:iso(t0-80*D),notes:''},{id:'s_juli_odo',who:'juli',what:'Odontopediatra',every:12,last:'',notes:''},
+      {id:'s_fabri_cli',who:'fabri',what:'Control clínico',every:12,last:'',notes:''},{id:'s_fabri_odo',who:'fabri',what:'Odontólogo',every:6,last:'',notes:''},
+      {id:'s_euge_cli',who:'euge',what:'Control clínico',every:12,last:'',notes:''},{id:'s_euge_odo',who:'euge',what:'Odontólogo',every:6,last:'',notes:''},{id:'s_euge_gin',who:'euge',what:'Control ginecológico',every:12,last:'',notes:''}],
+    ciclo:[[-75,5],[-47,5],[-18,4]].flatMap(([a,n])=>Array.from({length:n},(_,i)=>{const date=iso(t0+(a+i)*D+12*H);return {id:'euge_'+date,who:'euge',date,flow:i===0?2:i===1?3:i<n-1?2:1,sym:i<2?['Cólicos']:[],mood:[],notes:'',demo:true}}))};
 }
-const COLS={people:'doc_people',meds:'doc_meds',vax:'doc_vax',turnos:'doc_turnos',controles:'doc_controles',hist:'doc_hist'};
+const COLS={people:'doc_people',meds:'doc_meds',vax:'doc_vax',turnos:'doc_turnos',controles:'doc_controles',hist:'doc_hist',sug:'doc_sug',ciclo:'doc_ciclo'};
 const UIK=['me','filter','tab','medSeg','turSeg','hisType','hisQ','accent'];
-let S={v:3,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:false,people:[],meds:[],vax:[],turnos:[],controles:[],hist:[]};
+let S={v:3,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:false,people:[],meds:[],vax:[],turnos:[],controles:[],hist:[],sug:[],ciclo:[]};
 try{const u=JSON.parse(localStorage.getItem(KEY+'-ui')||'{}');UIK.forEach(k=>{if(u[k]!=null)S[k]=u[k]})}catch(e){}
 let db=null,auth=null,HOG=null,CACHE={},READY=false,USER=null,UNSUB=[];
 function save(){
@@ -337,8 +364,38 @@ function vst(v){
   if(d<=45)return{k:'soon',t:inDays(d).replace(/^e/,'E')}; return{k:'',t:'Pendiente'};
 }
 
+/* ---------- controles sugeridos ---------- */
+const sugEvery=g=>{if(!g.age)return g.every;const b=P(g.who).birth;if(!b)return g.every||12;const m=Math.floor((Date.now()-pd(b))/(30.44*D));return m<12?1:m<24?3:m<36?6:12};
+const sugLast=g=>{const td=iso(Date.now());let l=g.last||'';S.turnos.forEach(t=>{if(t.sug===g.id&&t.date<td&&t.date>l)l=t.date});return l};
+const sugDue=g=>{const l=sugLast(g);return l?addM(l,sugEvery(g)):null};
+const sugTurno=g=>S.turnos.filter(t=>t.sug===g.id&&t.date>=iso(Date.now())).sort((a,b)=>a.date<b.date?-1:1)[0];
+const evTxt=n=>n===1?'cada mes':n===12?'cada año':n%12===0?'cada '+n/12+' años':'cada '+n+' meses';
+function sugSt(g){const t=sugTurno(g);if(t)return{k:'ok',t:'Turno el '+fd(t.date)};const d=sugDue(g);if(!d)return{k:'load',t:'Cargar el último'};const n=daysTo(d);return n<0?{k:'late',t:'Tocaba el '+fd(d)}:n<=30?{k:'soon',t:'Toca el '+fd(d)}:{k:'',t:'Próximo '+fd(d)}}
+/* ---------- ciclo menstrual ---------- */
+const SYM=['Cólicos','Dolor de cabeza','Hinchazón','Dolor lumbar','Sensibilidad en mamas','Acné','Cansancio','Náuseas'];
+const MOOD=['Bien','Tranquila','Sensible','Irritable','Triste','Ansiosa'];
+const FLOW=['Sin sangrado','Leve','Medio','Abundante'];
+const addD=(d,n)=>iso(pd(d)+n*D+12*H), diffD=(a,b)=>Math.round((pd(b)-pd(a))/D);
+const cicWho=()=>{const f=S.people.find(p=>p.id===S.filter&&p.ciclo);return f||S.people.find(p=>p.ciclo)||null};
+function cyc(who){
+  const days=S.ciclo.filter(c=>c.who===who&&c.flow>0).map(c=>c.date).sort(),per=[];
+  days.forEach(d=>{const l=per[per.length-1];if(l&&diffD(l.end,d)<=2)l.end=d;else per.push({start:d,end:d})});
+  const lens=[];for(let i=1;i<per.length;i++)lens.push(diffD(per[i-1].start,per[i].start));
+  const use=lens.filter(l=>l>=15&&l<=60).slice(-6),avg=use.length?Math.round(use.reduce((a,b)=>a+b,0)/use.length):28;
+  const pl=per.slice(-6).map(x=>diffD(x.start,x.end)+1),pavg=pl.length?Math.round(pl.reduce((a,b)=>a+b,0)/pl.length):5;
+  const last=per[per.length-1]||null,next=last?addD(last.start,avg):null;
+  return {per,lens,avg,pavg,last,next,n:use.length,spread:use.length>1?Math.max(...use)-Math.min(...use):null};
+}
+function cycMarks(c){
+  const pp={},fe={},ov={};if(!c.next)return{pp,fe,ov};
+  const td=iso(Date.now());
+  for(let k=0;k<8;k++){const st=addD(c.next,k*c.avg),o=addD(st,-14);
+    if(st>=td||k>0)for(let i=0;i<c.pavg;i++)pp[addD(st,i)]=1;
+    ov[o]=1;for(let i=-5;i<=1;i++)fe[addD(o,i)]=1}
+  return{pp,fe,ov};
+}
 /* ---------- vistas ---------- */
-const TABS=[['hoy','Hoy'],['meds','Remedios'],['vac','Vacunas'],['tur','Turnos'],['his','Historia']];
+const TABS=[['hoy','Hoy'],['meds','Remedios'],['vac','Vacunas'],['tur','Turnos'],['cic','Ciclo'],['his','Historia']];
 function chrome(){
   $('#chips').innerHTML=`<button class="chip all" data-f="all" aria-pressed="${S.filter==='all'}">Todos</button>`+
     S.people.map(p=>`<button class="chip" data-f="${p.id}" aria-pressed="${S.filter===p.id}"><span class="av" style="--c:var(${p.color})">${esc(p.name[0])}</span>${esc(p.name)}</button>`).join('');
@@ -346,7 +403,7 @@ function chrome(){
   $('#meBadge').innerHTML=`Usa: <span class="av" style="--c:var(${P(S.me).color})">${esc(P(S.me).name[0])}</span>`;
   const g=$('#gear');g.innerHTML=ic('cfg');S.tab==='cfg'?g.setAttribute('aria-current','page'):g.removeAttribute('aria-current');
   const fab=$('#fab'); fab.hidden=S.tab==='cfg'; fab.innerHTML=ic('plus');
-  fab.setAttribute('aria-label',{hoy:'Agregar medicamento',meds:'Agregar medicamento',vac:'Agregar vacuna',tur:S.turSeg==='turnos'?'Agregar turno':'Agregar control',his:'Agregar entrada a la historia'}[S.tab]||'Agregar');
+  fab.setAttribute('aria-label',{hoy:'Agregar medicamento',meds:'Agregar medicamento',vac:'Agregar vacuna',tur:S.turSeg==='turnos'?'Agregar turno':'Agregar control',his:'Agregar entrada a la historia',cic:'Registrar el día de hoy'}[S.tab]||'Agregar');
 }
 function doseRow(i){
   const {m,s,l,st}=i, t=l&&l.t;
@@ -367,6 +424,7 @@ function vHoy(){
   h+=`<div class="sum"><div><div class="label">${esc(LONG())}</div><div class="big">${total?`${done.length} de ${total} tomas`:'Sin tomas hoy'}</div>
     <div class="sub">${late.length?`${late.length} atrasada${late.length>1?'s':''}. `:''}${next[0]?`Próxima a las ${hm(next[0].s)}: ${esc(next[0].m.name)} para ${esc(P(next[0].m.who).name)}.`:total?'No quedan tomas programadas para hoy.':'Agregá un medicamento con el botón +.'}</div></div>
     <div class="bar" role="img" aria-label="${pct}% de las tomas de hoy hechas"><i style="width:${pct}%"></i></div></div>`;
+  S.sug.filter(g=>show(g)&&!sugTurno(g)&&sugDue(g)&&daysTo(sugDue(g))<=30).sort((a,b)=>sugDue(a)<sugDue(b)?-1:1).slice(0,3).forEach(g=>h+=`<div class="note info"><span>${daysTo(sugDue(g))<0?'Tocaba':'Toca'} ${esc(g.what.toLowerCase())} de ${esc(P(g.who).name)}: ${fd(sugDue(g))}.</span><button data-act="sugTur" data-id="${g.id}">Agendar</button></div>`);
   low.forEach(m=>h+=`<div class="note"><span>Quedan ${m.stock} dosis de ${esc(m.name)} (${esc(P(m.who).name)}). Conviene comprar.</span></div>`);
   const sec=(t,arr)=>arr.length?`<section class="sec"><div class="sec-h"><span class="label">${t}</span><span class="count">${arr.length}</span></div><div class="list">${arr.map(doseRow).join('')}</div></section>`:'';
   h+=sec('Atrasadas',late)+sec('Próximas',next);
@@ -429,6 +487,8 @@ function vTur(){
     const up=ts.filter(t=>t.date>=td), old=ts.filter(t=>t.date<td).reverse();
     h+=`<button class="btn ghost" data-act="gcalSync">Traer turnos de Google Calendar</button>${window.GMSG?`<div class="note ${window.GERR?'':'info'}"><span>${esc(window.GMSG)}</span></div>`:''}`;
     h+=`<section class="sec"><div class="sec-h"><span class="label">Próximos</span><span class="count">${up.length}</span></div><div class="list">${up.map(row).join('')||'<div class="empty">No hay turnos agendados. Tocá + para cargar uno.</div>'}</div></section>`;
+    const sg=S.sug.filter(show).sort((a,b)=>(sugDue(a)||'9')<(sugDue(b)||'9')?-1:1);
+    h+=`<section class="sec"><div class="sec-h"><span class="label">Controles sugeridos</span><button class="btn sm ghost" data-act="editSug" data-id="">Agregar</button></div><div class="list">${sg.map(g=>{const st=sugSt(g);return `<button class="row" data-act="editSug" data-id="${g.id}"><span class="body"><span class="t1">${esc(g.what)}</span><span class="t2">${who(g.who)}<span>${cap(evTxt(sugEvery(g)))}${g.age?', según la edad':''}</span></span></span><span class="pill ${st.k}">${st.t}</span></button>`}).join('')||'<div class="empty">Sin controles sugeridos. Tocá Agregar para cargar uno.</div>'}</div><p class="foot" style="text-align:left;margin:0">Las frecuencias son las habituales; ajustalas a lo que indique cada médico.</p></section>`;
     if(old.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Anteriores</span></div><div class="list">${old.map(row).join('')}</div></section>`;
   }else{
     const cs=S.controles.filter(show).sort((a,b)=>a.date<b.date?1:-1);
@@ -436,6 +496,29 @@ function vTur(){
       const prev=cs.slice(i+1).find(x=>x.who===c.who), dp=prev&&c.peso&&prev.peso?(c.peso-prev.peso).toFixed(1):null;
       return `<button class="row" data-act="editCtl" data-id="${c.id}"><span class="time" style="width:auto">${fd(c.date)}</span><span class="body"><span class="t1">${c.peso?esc(c.peso)+' kg':''}${c.peso&&c.talla?' · ':''}${c.talla?esc(c.talla)+' cm':''} ${c.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(c.who)}${dp!=null?`<span>${dp>=0?'+':''}${dp} kg desde el anterior</span>`:''}</span></span></button>`}).join('')||'<div class="empty">Sin controles. Tocá + para cargar peso y talla.</div>'}</div></section>`;
   }
+  return h;
+}
+function vCic(){
+  const w=cicWho();
+  if(!w)return `<div class="list"><div class="empty">Nadie tiene activado el registro del ciclo. Activalo en Ajustes, en la ficha de la persona.</div></div>`;
+  const c=cyc(w.id),mk=cycMarks(c),td=iso(Date.now()),by={};S.ciclo.filter(x=>x.who===w.id).forEach(x=>by[x.date]=x);
+  const cm=window.CICM||td.slice(0,7),[yy,mm]=cm.split('-').map(Number),first=new Date(yy,mm-1,1),nd=new Date(yy,mm,0).getDate(),lead=(first.getDay()+6)%7;
+  const dayN=c.last?diffD(c.last.start,td)+1:null,dn=c.next?daysTo(c.next):null,inPer=c.last&&c.last.end>=addD(td,-1)&&by[td]&&by[td].flow>0;
+  let h=S.demo?`<div class="note info"><span>Los períodos cargados son de ejemplo.</span><button data-act="clearDemo">Borrar ejemplos</button></div>`:'';
+  h+=`<div class="sum"><div><div class="label">Ciclo de ${esc(w.name)}</div><div class="big">${dayN?(inPer?'Día '+dayN+' · en período':'Día '+dayN+' del ciclo'):'Sin períodos cargados'}</div>
+    <div class="sub">${c.next?(dn<0?`El período se esperaba el ${fd(c.next)} (hace ${-dn} día${dn===-1?'':'s'}).`:`Próximo período estimado: ${fd(c.next)} (${inDays(dn)}).`)+(c.n?'':' Calculado con 28 días hasta tener dos períodos cargados.'):'Cargá el primer período para empezar a ver las estimaciones.'}</div></div>
+    <div class="g2"><button class="btn" data-act="cicDay" data-d="${td}">Registrar hoy</button><button class="btn ghost" data-act="cicRange">Cargar período</button></div></div>`;
+  h+=`<section class="sec"><div class="calh"><button class="gear" data-cnav="-1" aria-label="Mes anterior">${ic('prev')}</button><b>${cap(first.toLocaleDateString('es-AR',{month:'long',year:'numeric'}))}</b><button class="gear" data-cnav="1" aria-label="Mes siguiente">${ic('next')}</button></div>
+    <div class="cal">${['L','M','M','J','V','S','D'].map(x=>`<span class="dow">${x}</span>`).join('')}${Array.from({length:lead},()=>'<span class="cd out"></span>').join('')}${Array.from({length:nd},(_,i)=>{const d=cm+'-'+pad(i+1),e=by[d],fl=e&&e.flow>0;
+      const cls=fl?'f'+e.flow:(mk.pp[d]&&d>=td?'pp':mk.fe[d]?'fe':'');
+      return `<button class="cd ${cls} ${mk.ov[d]&&!fl?'ov':''} ${d===td?'today':''}" data-act="cicDay" data-d="${d}" aria-label="${fd(d)}${fl?', sangrado '+FLOW[e.flow].toLowerCase():''}">${i+1}${e&&((e.sym&&e.sym.length)||(e.mood&&e.mood.length)||e.notes)?'<i></i>':''}</button>`}).join('')}</div>
+    <div class="leg"><span><span class="cd f2"></span>Período</span><span><span class="cd pp"></span>Período estimado</span><span><span class="cd fe"></span>Días fértiles</span><span><span class="cd fe ov"></span>Ovulación</span><span><span class="cd" style="display:grid;place-items:center;color:var(--muted)"><i style="position:static"></i></span>Con notas</span></div></section>`;
+  const cnt={};S.ciclo.filter(x=>x.who===w.id).forEach(x=>(x.sym||[]).forEach(t=>cnt[t]=(cnt[t]||0)+1));
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]).join(', ');
+  h+=`<section class="sec"><div class="sec-h"><span class="label">Análisis</span></div><div class="sum"><dl class="kv"><dt>Duración del ciclo</dt><dd>${c.n?c.avg+' días en promedio':'Sin datos todavía'}</dd><dt>Duración del período</dt><dd>${c.per.length?c.pavg+' días en promedio':'Sin datos todavía'}</dd><dt>Regularidad</dt><dd>${c.spread==null?'Faltan ciclos para medirla':c.spread<=3?'Regular (varía '+c.spread+' días)':c.spread<=7?'Algo variable (varía '+c.spread+' días)':'Irregular (varía '+c.spread+' días)'}</dd><dt>Síntomas más frecuentes</dt><dd>${esc(top)||'Sin síntomas cargados'}</dd></dl></div>
+    <div class="note"><span>La ovulación y los días fértiles son estimaciones a partir de los ciclos cargados. No sirven como método anticonceptivo, y con anticonceptivos hormonales no aplican.</span></div></section>`;
+  const ps=c.per.slice().reverse().slice(0,8);
+  h+=`<section class="sec"><div class="sec-h"><span class="label">Períodos cargados</span><span class="count">${c.per.length}</span></div><div class="list">${ps.map(x=>{const i=c.per.indexOf(x),len=i>0?c.lens[i-1]:null;return `<button class="row" data-act="cicGo" data-d="${x.start}"><span class="body"><span class="t1">${fd(x.start)} al ${fd(x.end)}</span><span class="t2"><span>${diffD(x.start,x.end)+1} días de período</span>${len?`<span>ciclo de ${len} días</span>`:''}</span></span></button>`}).join('')||'<div class="empty">Todavía no hay períodos cargados.</div>'}</div></section>`;
   return h;
 }
 function vCfg(){
@@ -474,7 +557,7 @@ function vHis(){
 function render(){
   document.documentElement.dataset.accent=S.accent||'teal';
   chrome();
-  $('#view').innerHTML={hoy:vHoy,meds:vMeds,vac:vVac,tur:vTur,his:vHis,cfg:vCfg}[S.tab]();
+  $('#view').innerHTML={hoy:vHoy,meds:vMeds,vac:vVac,tur:vTur,cic:vCic,his:vHis,cfg:vCfg}[S.tab]();
   save();
 }
 
@@ -560,8 +643,40 @@ function gcal(t){
   const [h,m]=(t.time||'09:00').split(':').map(Number), e=new Date(pd(t.date)+(h+1)*H+m*6e4), z=s=>s.replace(/[-:]/g,'');
   return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(P(t.who).name+': '+t.what)+'&dates='+z(t.date)+'T'+pad(h)+pad(m)+'00/'+z(iso(e))+'T'+z(hm(e))+'00&ctz=America/Argentina/Cordoba&location='+encodeURIComponent(t.place||'')+'&details='+encodeURIComponent([t.prof,t.notes].filter(Boolean).join(' · '));
 }
-function shTur(t){
-  const e=t||{who:defWho(),what:'',prof:'',place:'',date:iso(Date.now()+D),time:'09:00',notes:''}; SH={k:'tur',t,del:false};
+function shSug(g){
+  const e=g||{who:defWho(),what:'',every:12,age:false,last:'',notes:''},yr=!e.age&&e.every%12===0;SH={k:'sug',g,del:false};
+  const st=g?sugSt(g):null;
+  sheet(g?'Control sugerido':'Nuevo control sugerido',`${g?`<dl class="kv"><dt>Estado</dt><dd><span class="pill ${st.k}">${st.t}</span></dd></dl>`:''}
+    <label class="f"><span>Control</span><input id="sg-what" value="${esc(e.what)}" placeholder="Ej.: oftalmólogo"></label>
+    <label class="f"><span>Para quién</span><select id="sg-who">${opts(e.who)}</select></label>
+    <label class="chk"><input type="checkbox" id="sg-age" ${e.age?'checked':''}><span>Frecuencia según la edad (pediatría)</span></label>
+    <div class="g2" id="sg-ev-w" ${e.age?'hidden':''}><label class="f"><span>Cada cuánto</span><input id="sg-n" type="number" min="1" inputmode="numeric" value="${yr?e.every/12:e.every}"></label><label class="f"><span>Unidad de tiempo</span><select id="sg-u"><option value="1" ${yr?'':'selected'}>Meses</option><option value="12" ${yr?'selected':''}>Años</option></select></label></div>
+    <p class="foot" id="sg-age-t" style="text-align:left;margin:0" ${e.age?'':'hidden'}>Mensual hasta el año, cada 3 meses hasta los 2 años, cada 6 meses hasta los 3 y después una vez por año.</p>
+    <label class="f"><span>Fecha del último control</span><input id="sg-last" type="date" max="${iso(Date.now())}" value="${e.last||''}"></label>
+    <label class="f"><span>Notas</span><textarea id="sg-notes">${esc(e.notes)}</textarea></label>
+    <div class="err" id="sg-err" hidden></div><button class="btn" data-act="saveSug">Guardar</button>
+    ${g?'<button class="btn ghost" data-act="sugTur" data-id="'+g.id+'">Agendar turno para este control</button><button class="btn danger" data-act="del">Eliminar control sugerido</button>':''}`);
+}
+function shCic(wid,date){
+  const cur=S.ciclo.find(x=>x.who===wid&&x.date===date)||{};
+  if(!SH||SH.k!=='cic'||SH.date!==date)SH={k:'cic',who:wid,date,flow:cur.flow||0,sym:[...(cur.sym||[])],mood:[...(cur.mood||[])],notes:cur.notes||'',has:!!cur.id};
+  const fut=date>iso(Date.now());
+  sheet(new Date(pd(date)).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'}).replace(/^./,x=>x.toUpperCase()),`
+    ${fut?'<div class="note info"><span>Es un día futuro: se pueden dejar notas, pero no registrar sangrado.</span></div>':`<div class="stack"><span class="label">Sangrado</span><div class="seg" style="grid-auto-flow:row;grid-template-columns:1fr 1fr">${FLOW.map((t,i)=>`<button data-cflow="${i}" aria-pressed="${SH.flow===i}">${t}</button>`).join('')}</div></div>`}
+    <div class="stack"><span class="label">Síntomas</span><div class="chipw">${SYM.map(t=>`<button class="chip all" data-cs="${t}" aria-pressed="${SH.sym.includes(t)}">${t}</button>`).join('')}</div></div>
+    <div class="stack"><span class="label">Ánimo</span><div class="chipw">${MOOD.map(t=>`<button class="chip all" data-cm="${t}" aria-pressed="${SH.mood.includes(t)}">${t}</button>`).join('')}</div></div>
+    <label class="f"><span>Notas</span><textarea id="cc-notes">${esc(SH.notes)}</textarea></label>
+    <button class="btn" data-act="saveCic">Guardar</button>${SH.has?'<button class="btn danger" data-act="delCic">Borrar el registro de este día</button>':''}`);
+}
+function shCicR(){
+  const td=iso(Date.now());SH={k:'cicr'};
+  sheet('Cargar período',`<div class="g2"><label class="f"><span>Empezó el</span><input id="cr-a" type="date" max="${td}" value="${td}"></label><label class="f"><span>Terminó el (opcional)</span><input id="cr-b" type="date" max="${td}"></label></div>
+    <label class="f"><span>Intensidad</span><select id="cr-f"><option value="1">Leve</option><option value="2" selected>Medio</option><option value="3">Abundante</option></select></label>
+    <p class="foot" style="text-align:left;margin:0">Si todavía no terminó, dejá vacía la fecha de fin y andá marcando cada día. La intensidad de cada día se puede ajustar después desde el calendario.</p>
+    <div class="err" id="cr-err" hidden></div><button class="btn" data-act="saveCicR">Guardar período</button>`);
+}
+function shTur(t,pre){
+  const e=t||Object.assign({who:defWho(),what:'',prof:'',place:'',date:iso(Date.now()+D),time:'09:00',notes:''},pre||{}); SH={k:'tur',t,del:false,pre};
   sheet(t?'Editar turno':'Nuevo turno',`<label class="f"><span>Motivo</span><input id="tu-what" value="${esc(e.what)}" placeholder="Ej.: control pediátrico"></label>
     <div class="g2"><label class="f"><span>Para quién</span><select id="tu-who">${opts(e.who)}</select></label><label class="f"><span>Profesional</span><input id="tu-prof" value="${esc(e.prof)}"></label></div>
     <div class="g2"><label class="f"><span>Día</span><input id="tu-date" type="date" value="${e.date}"></label><label class="f"><span>Hora</span><input id="tu-time" type="time" value="${e.time}"></label></div>
@@ -599,6 +714,7 @@ function shP(p){
     <label class="f"><span>Alergias</span><textarea id="pp-alergias">${esc(e.alergias)}</textarea></label>
     <label class="f"><span>Antecedentes</span><textarea id="pp-antecedentes">${esc(e.antecedentes)}</textarea></label>
     <label class="f"><span>Medicación habitual</span><textarea id="pp-habitual">${esc(e.habitual)}</textarea></label>
+    <label class="chk"><input type="checkbox" id="pp-ciclo" ${e.ciclo?'checked':''}><span>Registrar ciclo menstrual</span></label>
     ${!p?'<label class="f"><span>Vacunas a precargar</span><select id="pp-cal"><option value="adult">Adulto</option><option value="child">Bebé o niño (según fecha de nacimiento)</option><option value="">Ninguna</option></select></label>':''}
     <div class="err" id="pp-err" hidden></div><button class="btn" data-act="saveP">Guardar</button>${p&&S.people.length>1&&p.id!=='fabri'&&p.id!=='euge'?'<button class="btn danger" data-act="del">Eliminar integrante</button>':''}`);
 }
@@ -638,9 +754,28 @@ const ACT={
   saveNewVax(){const name=val('nv-name');if(!name)return fail('nv-err','Escribí el nombre de la vacuna.');
     S.vax.push({id:uid(),who:val('nv-who'),name,dose:val('nv-dose')||'Dosis',age:'',due:val('nv-due'),until:null,applied:false,date:'',lot:'',photo:'',custom:true});closeSheet();render();toast('Vacuna agregada')},
   editTur(d){shTur(S.turnos.find(x=>x.id===d.id))},
+  editSug(d){shSug(d.id?S.sug.find(x=>x.id===d.id):null)},
+  saveSug(){const what=val('sg-what');if(!what)return fail('sg-err','Escribí qué control es.');
+    const age=document.getElementById('sg-age').checked,n=parseInt(val('sg-n'))*parseInt(val('sg-u'));if(!age&&!(n>=1))return fail('sg-err','Indicá cada cuánto se hace (mínimo 1).');
+    const o={what,who:val('sg-who'),age,every:age?(SH.g&&SH.g.every)||12:n,last:val('sg-last'),notes:val('sg-notes')};
+    if(SH.g)Object.assign(SH.g,o);else S.sug.push(Object.assign({id:uid()},o));closeSheet();render();toast('Control guardado')},
+  sugTur(d){const g=S.sug.find(x=>x.id===d.id),due=sugDue(g),tm=iso(Date.now()+D);S.tab='tur';S.turSeg='turnos';shTur(null,{who:g.who,what:g.what,date:due&&due>tm?due:tm,sug:g.id})},
+  cicDay(d){const w=cicWho();if(w)shCic(w.id,d.d)},
+  cicGo(d){window.CICM=d.d.slice(0,7);render();window.scrollTo(0,0)},
+  cicRange(){shCicR()},
+  saveCic(){const {who,date}=SH,notes=val('cc-notes'),i=S.ciclo.findIndex(x=>x.who===who&&x.date===date);
+    const o={id:who+'_'+date,who,date,flow:SH.flow,sym:SH.sym,mood:SH.mood,notes};
+    if(!o.flow&&!o.sym.length&&!o.mood.length&&!notes){if(i>=0)S.ciclo.splice(i,1)}else if(i>=0)S.ciclo[i]=o;else S.ciclo.push(o);
+    closeSheet();render();toast('Día guardado')},
+  delCic(){const {who,date}=SH;S.ciclo=S.ciclo.filter(x=>!(x.who===who&&x.date===date));closeSheet();render();toast('Registro borrado')},
+  saveCicR(){const w=cicWho(),a=val('cr-a'),b=val('cr-b')||a,f=parseInt(val('cr-f')),td=iso(Date.now());
+    if(!a)return fail('cr-err','Elegí el día en que empezó.');if(b<a)return fail('cr-err','La fecha de fin no puede ser anterior al inicio.');if(b>td)return fail('cr-err','Las fechas no pueden ser futuras.');
+    const n=diffD(a,b)+1;if(n>15)return fail('cr-err','Un período no puede tener más de 15 días. Revisá las fechas.');
+    for(let i=0;i<n;i++){const date=addD(a,i),e=S.ciclo.find(x=>x.who===w.id&&x.date===date);if(e){if(!e.flow)e.flow=f;delete e.demo}else S.ciclo.push({id:w.id+'_'+date,who:w.id,date,flow:f,sym:[],mood:[],notes:''})}
+    window.CICM=a.slice(0,7);closeSheet();render();toast('Período guardado')},
   saveTur(){const what=val('tu-what');if(!what)return fail('tu-err','Escribí el motivo del turno.');if(!val('tu-date'))return fail('tu-err','Elegí el día.');
     const o={who:val('tu-who'),what,prof:val('tu-prof'),place:val('tu-place'),date:val('tu-date'),time:val('tu-time'),notes:val('tu-notes')};
-    if(SH.t){Object.assign(SH.t,o);delete SH.t.demo}else S.turnos.push(Object.assign({id:uid()},o));closeSheet();render();toast('Turno guardado')},
+    if(SH.t){Object.assign(SH.t,o);delete SH.t.demo}else S.turnos.push(Object.assign({id:uid()},SH.pre&&SH.pre.sug?{sug:SH.pre.sug}:{},o));closeSheet();render();toast('Turno guardado')},
   editHis(d){shHis(S.hist.find(x=>x.id===d.id))},
   turToHis(){const t=SH.t;shHis(null,{who:t.who,type:'consulta',date:t.date,title:t.what,prof:t.prof,notes:t.notes,turno:t.id})},
   rmFile(d){SH.files.splice(+d.i,1);$('#hs-flist').innerHTML=fileList()},
@@ -663,7 +798,7 @@ const ACT={
     if(SH.c){Object.assign(SH.c,o);delete SH.c.demo}else S.controles.push(Object.assign({id:uid()},o));closeSheet();render();toast('Control guardado')},
   editP(d){shP(d.id?S.people.find(x=>x.id===d.id):null)},
   saveP(){const name=val('pp-name');if(!name)return fail('pp-err','Escribí el nombre.');
-    const o={name,birth:val('pp-birth'),os:val('pp-os'),afil:val('pp-afil'),sangre:val('pp-sangre'),medico:val('pp-medico'),tel:val('pp-tel'),alergias:val('pp-alergias'),antecedentes:val('pp-antecedentes'),habitual:val('pp-habitual')};
+    const o={name,birth:val('pp-birth'),os:val('pp-os'),afil:val('pp-afil'),sangre:val('pp-sangre'),medico:val('pp-medico'),tel:val('pp-tel'),alergias:val('pp-alergias'),antecedentes:val('pp-antecedentes'),habitual:val('pp-habitual'),ciclo:document.getElementById('pp-ciclo').checked};
     if(SH.p)Object.assign(SH.p,o);else{const cal=val('pp-cal');if(cal==='child'&&!o.birth)return fail('pp-err','Para precargar el calendario hace falta la fecha de nacimiento.');
       const p=Object.assign({id:uid(),color:COLORS[S.people.length%COLORS.length]},o);S.people.push(p);
       if(cal==='child')S.vax.push(...childVax(p.id,p.birth,-1));if(cal==='adult')S.vax.push(...adultVax(p.id));}
@@ -673,10 +808,11 @@ const ACT={
     if(SH.k==='vax')S.vax=S.vax.filter(x=>x!==SH.v);
     if(SH.k==='tur')S.turnos=S.turnos.filter(x=>x!==SH.t);
     if(SH.k==='ctl')S.controles=S.controles.filter(x=>x!==SH.c);
+    if(SH.k==='sug'){const id=SH.g.id;S.sug=S.sug.filter(x=>x!==SH.g);S.turnos.forEach(t=>{if(t.sug===id)delete t.sug})}
     if(SH.k==='his'){const id=SH.e.id;S.hist=S.hist.filter(x=>x!==SH.e);S.turnos.forEach(t=>{if(t.hist===id)delete t.hist})}
-    if(SH.k==='p'){const id=SH.p.id;S.people=S.people.filter(x=>x.id!==id);['meds','vax','turnos','controles','hist'].forEach(k=>S[k]=S[k].filter(x=>x.who!==id));if(S.filter===id)S.filter='all'}
+    if(SH.k==='p'){const id=SH.p.id;S.people=S.people.filter(x=>x.id!==id);['meds','vax','turnos','controles','hist','sug','ciclo'].forEach(k=>S[k]=S[k].filter(x=>x.who!==id));if(S.filter===id)S.filter='all'}
     closeSheet();render();toast('Eliminado')},
-  clearDemo(){S.meds=S.meds.filter(x=>!x.demo);S.turnos=S.turnos.filter(x=>!x.demo);S.controles=S.controles.filter(x=>!x.demo);S.hist=S.hist.filter(x=>!x.demo);S.demo=false;render();toast('Ejemplos borrados')},
+  clearDemo(){S.meds=S.meds.filter(x=>!x.demo);S.turnos=S.turnos.filter(x=>!x.demo);S.controles=S.controles.filter(x=>!x.demo);S.hist=S.hist.filter(x=>!x.demo);S.ciclo=S.ciclo.filter(x=>!x.demo);S.demo=false;render();toast('Ejemplos borrados')},
   reset(_,btn){ if(!btn.dataset.sure){btn.dataset.sure=1;btn.textContent='Tocá de nuevo para borrar todo y volver a los ejemplos';return} S=seed();S.tab='cfg';render();toast('Vista previa restablecida')},
   share(){const u=location.href;(navigator.share?navigator.share({title:'DocApp',text:'DocApp, la salud de la familia',url:u}):Promise.reject()).then(()=>{}).catch(e=>{if(e&&e.name==='AbortError')return;return (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Enlace copiado')).catch(()=>toast('Copiá el enlace desde la barra del navegador'))})}
 };
@@ -690,17 +826,21 @@ document.addEventListener('click',e=>{
   else if(d.me){S.me=d.me;if(USER)S.people.forEach(p=>{if(p.id===d.me)p.email=USER.email;else if(p.email===USER.email)delete p.email});render()}
   else if(d.ht){S.hisType=d.ht;render()}
   else if(d.accent){S.accent=d.accent;render()}
+  else if(d.cnav){const td=iso(Date.now()),[y,m]=(window.CICM||td.slice(0,7)).split('-').map(Number),n=new Date(y,m-1+(+d.cnav),1);window.CICM=n.getFullYear()+'-'+pad(n.getMonth()+1);render()}
+  else if(d.cflow){SH.notes=val('cc-notes');SH.flow=+d.cflow;shCic(SH.who,SH.date)}
+  else if(d.cs||d.cm){const k=d.cs?'sym':'mood',t=d.cs||d.cm,i=SH[k].indexOf(t);i>=0?SH[k].splice(i,1):SH[k].push(t);b.setAttribute('aria-pressed',i<0)}
   else if(d.when){if(d.when==='custom'&&SH.when!=='custom')SH.custom=Date.now();SH.when=d.when;shTake()}
   else if(d.mode){SH.mode=d.mode;shTake()}
   else if(d.mdmode){SH.mode=d.mdmode;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-sched').hidden=SH.mode==='prn';$('#md-every-l').textContent=SH.mode==='prn'?'Intervalo mínimo':'Cada cuánto'}
   else if(d.mdcyc){SH.cyc=d.mdcyc==='si';b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-cyc-w').hidden=!SH.cyc}
   else if(d.mddur){SH.dur=d.mddur;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-days-w').hidden=SH.dur!=='fin'}
   else if(d.act&&ACT[d.act])ACT[d.act](d,b);
-  else if(b.id==='fab'){ if(S.tab==='vac')shNewVax(); else if(S.tab==='his')shHis(); else if(S.tab==='tur')(S.turSeg==='turnos'?shTur():shCtl()); else shMed(); }
+  else if(b.id==='fab'){ if(S.tab==='vac')shNewVax(); else if(S.tab==='his')shHis(); else if(S.tab==='cic'){const w=cicWho();if(w)shCic(w.id,iso(Date.now()));else toast('Activá el registro del ciclo en la ficha de la persona')} else if(S.tab==='tur')(S.turSeg==='turnos'?shTur():shCtl()); else shMed(); }
 });
 document.addEventListener('change',e=>{ if(e.target.id==='tk-time'&&SH&&SH.k==='take'){const[h,m]=e.target.value.split(':').map(Number);if(!isNaN(h)){SH.custom=sod(Date.now())+h*H+m*6e4;shTake()}} });
 document.addEventListener('input',e=>{if(e.target.id==='his-q'){S.hisQ=e.target.value;$('#his-list').innerHTML=hisList();save()}});
 document.addEventListener('change',e=>{if(e.target.id==='hs-files'&&SH&&SH.k==='his'){[...e.target.files].forEach(f=>SH.files.push({name:f.name,size:f.size}));e.target.value='';$('#hs-flist').innerHTML=fileList()}});
+document.addEventListener('change',e=>{if(e.target.id==='sg-age'){$('#sg-ev-w').hidden=e.target.checked;$('#sg-age-t').hidden=!e.target.checked}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 render();
 /* ---------- cuenta y sincronización ---------- */
@@ -728,7 +868,9 @@ async function ready(){
   try{
     const ref=HOG.collection('doc_meta').doc('init'),meta=await ref.get();
     READY=true;
-    if(!meta.exists){const s=seed();S.people=s.people;S.vax=s.vax;await ref.set({v:1,at:Date.now(),by:USER.email})}
+    const sugSeed=()=>seed().sug.map(g=>Object.assign(g,{last:''}));
+    if(!meta.exists){const s=seed();S.people=s.people;S.vax=s.vax;S.sug=sugSeed();await ref.set({v:2,at:Date.now(),by:USER.email})}
+    else if(!((meta.data()||{}).v>=2)){if(!S.sug.length)S.sug=sugSeed().filter(g=>S.people.some(p=>p.id===g.who));const e=S.people.find(p=>p.id==='euge');if(e&&e.ciclo==null)e.ciclo=true;await ref.set({v:2,at:Date.now(),by:USER.email})}
   }catch(e){READY=false;gate('err',e);return}
   const p=S.people.find(p=>p.email===USER.email);if(p)S.me=p.id;
   gate('in');render();
