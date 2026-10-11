@@ -427,7 +427,7 @@ function vTur(){
     const ts=S.turnos.filter(show).sort((a,b)=>(a.date+a.time)<(b.date+b.time)?-1:1), td=iso(Date.now());
     const row=t=>`<button class="row" data-act="editTur" data-id="${t.id}"><span class="body"><span class="t1">${esc(t.what)} ${t.gid?'<span class="tag">Calendar</span>':''}</span><span class="t2">${who(t.who)}<span>${fd(t.date)} ${esc(t.time)}</span>${t.prof?`<span>${esc(t.prof)}</span>`:''}${t.place?`<span>${esc(t.place)}</span>`:''}</span></span>${t.date>=td?`<span class="pill ${daysTo(t.date)<=7?'soon':''}">${inDays(daysTo(t.date))}</span>`:`<span class="pill ${t.hist?'ok':'load'}">${t.hist?'En historia':'Pasar a historia'}</span>`}</button>`;
     const up=ts.filter(t=>t.date>=td), old=ts.filter(t=>t.date<td).reverse();
-    h+=`<button class="btn ghost" data-act="gcalSync">Traer turnos de Google Calendar</button>`;
+    h+=`<button class="btn ghost" data-act="gcalSync">Traer turnos de Google Calendar</button>${window.GMSG?`<div class="note ${window.GERR?'':'info'}"><span>${esc(window.GMSG)}</span></div>`:''}`;
     h+=`<section class="sec"><div class="sec-h"><span class="label">Próximos</span><span class="count">${up.length}</span></div><div class="list">${up.map(row).join('')||'<div class="empty">No hay turnos agendados. Tocá + para cargar uno.</div>'}</div></section>`;
     if(old.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Anteriores</span></div><div class="list">${old.map(row).join('')}</div></section>`;
   }else{
@@ -738,7 +738,8 @@ ACT.login=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch
 ACT.logout=()=>{closeSheet();stopSync();auth.signOut()};
 ACT.gcalSync=async()=>{
   if(!USER||!READY)return;
-  toast('Conectando con Google Calendar…');
+  const say=(m,err)=>{window.GMSG=m;window.GERR=!!err;S.tab='tur';S.turSeg='turnos';render()};
+  say('Conectando con Google Calendar…');
   try{
     const prov=new firebase.auth.GoogleAuthProvider();prov.addScope('https://www.googleapis.com/auth/calendar.readonly');prov.setCustomParameters({login_hint:USER.email});
     const res=await auth.currentUser.reauthenticateWithPopup(prov),tok=res&&res.credential&&res.credential.accessToken;
@@ -746,7 +747,7 @@ ACT.gcalSync=async()=>{
     const api=async u=>{const r=await fetch('https://www.googleapis.com/calendar/v3/'+u,{headers:{Authorization:'Bearer '+tok}}),j=await r.json();if(!r.ok)throw{message:(j.error&&j.error.message)||('error '+r.status)};return j};
     const cl=await api('users/me/calendarList?maxResults=250');
     const cal=(cl.items||[]).find(c=>(c.summaryOverride||c.summary||'').trim().toLowerCase()==='salud');
-    if(!cal){toast('No encontré un calendario llamado "Salud" en tu cuenta');return}
+    if(!cal){say('No encontré un calendario llamado "Salud" en la cuenta '+USER.email+'. Calendarios que veo: '+((cl.items||[]).map(c=>c.summaryOverride||c.summary).join(', ')||'ninguno')+'.',1);return}
     const ev=await api('calendars/'+encodeURIComponent(cal.id)+'/events?singleEvents=true&orderBy=startTime&maxResults=250&timeMin='+encodeURIComponent(new Date(Date.now()-60*D).toISOString()));
     const rx=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');let add=0,upd=0,del=0;const seen={};
     (ev.items||[]).forEach(e=>{
@@ -764,8 +765,10 @@ ACT.gcalSync=async()=>{
     });
     const td=iso(Date.now());
     S.turnos=S.turnos.filter(t=>{if(t.gid&&!seen[t.gid]&&t.date>=td&&!t.hist){del++;return false}return true});
-    S.tab='tur';S.turSeg='turnos';render();toast('Calendario Salud: '+add+' nuevos, '+upd+' actualizados, '+del+' quitados');
-  }catch(e){if(e&&(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'))return;toast('Google Calendar: '+((e&&(e.code||e.message))||'error'))}
+    say('Leí '+(ev.items||[]).length+' eventos del calendario Salud: '+add+' nuevos, '+upd+' actualizados, '+del+' quitados. '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+' h.');
+  }catch(e){if(e&&(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request')){say('Se cerró la ventana de Google antes de terminar. Tocá el botón de nuevo.',1);return}
+    const raw=String((e&&(e.code||e.message))||'error'),hint=/has not been used|is disabled|accessNotConfigured/i.test(raw)?'Falta habilitar la API de Google Calendar en el proyecto fliaapp de Google Cloud. ':/insufficient|scope|PERMISSION_DENIED/i.test(raw)?'Google no dio el permiso para ver el calendario. Tocá el botón de nuevo y, en la pantalla de Google, tildá la casilla para ver tus calendarios. ':/user-mismatch/.test(raw)?'Elegiste otra cuenta de Google. Usá la misma con la que entraste a la app. ':/popup-blocked/.test(raw)?'El navegador bloqueó la ventana de Google. Permití las ventanas emergentes para este sitio. ':'';
+    say(hint+'Detalle: '+raw,1)}
 };
 if(!window.firebase)gate('err',{message:'no se cargó Firebase'});
 else{
@@ -773,6 +776,7 @@ else{
   auth=firebase.auth();db=firebase.firestore();
   db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
   auth.onAuthStateChanged(async u=>{
+    if(u&&USER&&u.uid===USER.uid&&HOG){USER=u;return}
     USER=u;stopSync();
     if(!u){gate('out');render();return}
     gate('load');
