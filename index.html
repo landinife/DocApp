@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DocApp</title>
+<title>SaludApp</title>
 <meta name="theme-color" content="#000000">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
@@ -180,7 +180,7 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 
 <div id="gate" class="gate"><div class="gate-card">
   <svg viewBox="0 0 140 140" aria-hidden="true"><rect width="140" height="140" rx="32" style="fill:var(--brand)"/><path d="M70 28 114 66H26Z" fill="#fff" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><rect x="38" y="60" width="64" height="52" rx="7" fill="#fff"/><rect x="64" y="68" width="12" height="36" rx="3" style="fill:var(--brand)"/><rect x="52" y="80" width="36" height="12" rx="3" style="fill:var(--brand)"/></svg>
-  <h2>DocApp</h2><p id="gate-msg">Cargando…</p>
+  <h2>SaludApp</h2><p id="gate-msg">Cargando…</p>
   <button class="btn" id="gate-in" data-act="login" hidden>Iniciar sesión con Google (Sign in with Google)</button>
   <button class="btn ghost" id="gate-out" data-act="logout" hidden>Usar otra cuenta (Sign out)</button>
 </div></div>
@@ -188,7 +188,7 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
   <header class="top">
     <div class="brand">
       <svg viewBox="0 0 140 140" aria-hidden="true"><rect width="140" height="140" rx="32" style="fill:var(--brand)"/><path d="M70 28 114 66H26Z" fill="#fff" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><rect x="38" y="60" width="64" height="52" rx="7" fill="#fff"/><rect x="64" y="68" width="12" height="36" rx="3" style="fill:var(--brand)"/><rect x="52" y="80" width="36" height="12" rx="3" style="fill:var(--brand)"/></svg>
-      <h1>Doc<span>App</span></h1>
+      <h1>Salud<span>App</span></h1>
       <span class="me" id="meBadge"></span><button class="gear" id="gear" data-tab="cfg" aria-label="Ajustes (Settings)"></button>
     </div>
     <div class="chips" id="chips" role="group" aria-label="Filtrar por persona"></div>
@@ -533,12 +533,12 @@ function vCfg(){
     <div class="sum" style="box-shadow:none;border:1px solid var(--line)"><span class="label">Sesión iniciada</span><b style="overflow-wrap:anywhere">${esc(USER?USER.email:"")}</b></div><button class="btn ghost" data-act="logout">Cerrar sesión (Sign out)</button>
     <button class="btn ghost" disabled>Notificaciones de tomas (Notifications)</button>
     <button class="btn ghost" data-act="gcalSync">Traer turnos del calendario Salud (Google Calendar)</button>
-    <button class="btn ghost" disabled>Carpeta de estudios en Google Drive</button>
-    <p class="foot" style="text-align:left;margin:0">Los datos ya se sincronizan entre los teléfonos de la familia. Falta conectar la carpeta de Drive, y los avisos a la hora exacta llegan con la versión Android.</p>
+    <a class="btn ghost" style="text-decoration:none" target="_blank" rel="noopener" href="https://drive.google.com/drive/folders/1ePl7r98j4JrWGMTQORcTVcHqnIR8V6o3">Abrir la carpeta de estudios en Google Drive</a>
+    <p class="foot" style="text-align:left;margin:0">Los datos ya se sincronizan entre los teléfonos de la familia. Los avisos a la hora exacta llegan con la versión Android.</p>
     <button class="btn" data-act="share">Compartir la app (Share)</button>
     ${S.demo?'<button class="btn ghost" data-act="clearDemo">Borrar los datos de ejemplo</button>':''}
     </div></section>
-  <p class="foot">DocApp · versión web · datos sincronizados con la familia</p>`;
+  <p class="foot">SaludApp · versión web · datos sincronizados con la familia</p>`;
 }
 function hisList(){
   const q=(S.hisQ||'').toLowerCase();
@@ -548,7 +548,7 @@ function hisList(){
   return Object.keys(by).sort().reverse().map(y=>`<section class="sec"><div class="sec-h"><span class="label">${y}</span><span class="count">${by[y].length}</span></div><div class="list">${by[y].map(e=>`<button class="row" data-act="editHis" data-id="${e.id}"><span class="body"><span class="t1">${esc(e.title)} ${e.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(e.who)}<span>${fd(e.date)}</span>${e.esp?`<span>${esc(e.esp)}</span>`:''}${e.prof?`<span>${esc(e.prof)}</span>`:''}</span><span class="t2"><span class="pill load">${HT[e.type]}</span>${e.files.length?`<span class="pill">${e.files.length} archivo${e.files.length>1?'s':''}</span>`:''}</span></span></button>`).join('')}</div></section>`).join('');
 }
 function vHis(){
-  let h=`<div class="note info"><span>Los estudios se van a guardar en la carpeta compartida de Google Drive. Hasta conectar Drive, de cada adjunto solo queda el nombre.</span></div>`;
+  let h=`<div class="note info"><span>Los archivos que adjuntes se suben a la carpeta de cada persona en Google Drive, con el nombre ya codificado.</span></div>`;
   if(S.filter!=='all'){const p=P(S.filter),nd=v=>esc(v)||'Sin cargar';
     h+=`<section class="sec"><div class="sec-h"><h2>Datos de base de ${esc(p.name)}</h2><button class="btn sm ghost" data-act="editP" data-id="${p.id}">Editar</button></div><div class="sum"><dl class="kv"><dt>Alergias</dt><dd>${nd(p.alergias)}</dd><dt>Antecedentes</dt><dd>${nd(p.antecedentes)}</dd><dt>Medicación habitual</dt><dd>${nd(p.habitual)}</dd><dt>Grupo sanguíneo</dt><dd>${nd(p.sangre)}</dd></dl><button class="btn ghost" data-act="resumen" data-id="${p.id}">Resumen para la consulta</button></div></section>`;
   }else h+=`<p class="foot" style="margin:0">Elegí una persona arriba para ver sus datos de base y armar el resumen para la consulta.</p>`;
@@ -687,7 +687,7 @@ function shTur(t,pre){
     <label class="f"><span>Notas</span><textarea id="tu-notes">${esc(e.notes)}</textarea></label>
     <div class="err" id="tu-err" hidden></div><button class="btn" data-act="saveTur">Guardar</button>${t?`<a class="btn ghost" style="text-decoration:none" target="_blank" rel="noopener" href="${gcal(t)}">Agregar a Google Calendar (Add to Google Calendar)</a>`:'<p class="foot" style="margin:0">Después de guardar, abrí el turno para pasarlo a Google Calendar.</p>'}${t&&t.date<iso(Date.now())&&!t.hist?'<button class="btn ghost" data-act="turToHis">Pasar a la historia clínica</button>':''}${t?'<button class="btn danger" data-act="del">Eliminar turno</button>':''}`);
 }
-const fileList=()=>SH.files.length?`<div class="list" style="box-shadow:none;border:1px solid var(--line)">${SH.files.map((f,i)=>`<div class="row"><span class="body"><span class="t1">${esc(f.name)}</span>${f.size?`<span class="t2"><span>${Math.max(1,Math.round(f.size/1024))} KB</span></span>`:''}</span><button class="btn sm ghost" data-act="rmFile" data-i="${i}">Quitar</button></div>`).join('')}</div>`:'<p class="foot" style="text-align:left;margin:0">Sin archivos adjuntos.</p>';
+const fileList=()=>SH.files.length?`<div class="list" style="box-shadow:none;border:1px solid var(--line)">${SH.files.map((f,i)=>`<div class="row"><span class="body"><span class="t1">${esc(f.name)}</span>${f.size?`<span class="t2"><span>${Math.max(1,Math.round(f.size/1024))} KB</span></span>`:''}</span>${f.url?`<a class="btn sm ghost" style="text-decoration:none" target="_blank" rel="noopener" href="${esc(f.url)}">Abrir</a>`:''}<button class="btn sm ghost" data-act="rmFile" data-i="${i}">Quitar</button></div>`).join('')}</div>`:'<p class="foot" style="text-align:left;margin:0">Sin archivos adjuntos.</p>';
 function shHis(e,preset){
   const v=e||Object.assign({who:defWho(),type:'consulta',date:iso(Date.now()),title:'',prof:'',esp:'',notes:'',files:[]},preset||{});
   SH={k:'his',e,del:false,preset,files:[...(v.files||[])]};
@@ -698,7 +698,7 @@ function shHis(e,preset){
     <label class="f"><span>Resumen</span><textarea id="hs-notes" placeholder="Qué dijo el médico, resultados, indicaciones">${esc(v.notes)}</textarea></label>
     <div class="stack"><span class="label">Archivos adjuntos</span><div id="hs-flist">${fileList()}</div>
     <label class="f"><span>Agregar estudios, fotos o PDF</span><input id="hs-files" type="file" multiple accept="image/*,application/pdf"></label>
-    <p class="foot" style="text-align:left;margin:0">Hasta conectar Google Drive, de cada archivo solo queda el nombre.</p></div>
+    <p class="foot" style="text-align:left;margin:0">Se suben a Google Drive al guardar, con nombre de año y mes más el título. Las fotos se achican antes de subir.</p></div>
     <div class="err" id="hs-err" hidden></div><button class="btn" data-act="saveHis">Guardar</button>${e?'<button class="btn danger" data-act="del">Eliminar entrada</button>':''}`);
 }
 function shCtl(c){
@@ -817,7 +817,7 @@ const ACT={
     closeSheet();render();toast('Eliminado')},
   clearDemo(){S.meds=S.meds.filter(x=>!x.demo);S.turnos=S.turnos.filter(x=>!x.demo);S.controles=S.controles.filter(x=>!x.demo);S.hist=S.hist.filter(x=>!x.demo);S.ciclo=S.ciclo.filter(x=>!x.demo);S.demo=false;render();toast('Ejemplos borrados')},
   reset(_,btn){ if(!btn.dataset.sure){btn.dataset.sure=1;btn.textContent='Tocá de nuevo para borrar todo y volver a los ejemplos';return} S=seed();S.tab='cfg';render();toast('Vista previa restablecida')},
-  share(){const u=location.href;(navigator.share?navigator.share({title:'DocApp',text:'DocApp, la salud de la familia',url:u}):Promise.reject()).then(()=>{}).catch(e=>{if(e&&e.name==='AbortError')return;return (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Enlace copiado')).catch(()=>toast('Copiá el enlace desde la barra del navegador'))})}
+  share(){const u=location.href;(navigator.share?navigator.share({title:'SaludApp',text:'SaludApp, la salud de la familia',url:u}):Promise.reject()).then(()=>{}).catch(e=>{if(e&&e.name==='AbortError')return;return (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Enlace copiado')).catch(()=>toast('Copiá el enlace desde la barra del navegador'))})}
 };
 document.addEventListener('click',e=>{
   const b=e.target.closest('button,[data-close]'); if(!b)return;
@@ -843,7 +843,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('change',e=>{ if(e.target.id==='tk-time'&&SH&&SH.k==='take'){const[h,m]=e.target.value.split(':').map(Number);if(!isNaN(h)){SH.custom=sod(Date.now())+h*H+m*6e4;shTake()}} });
 document.addEventListener('input',e=>{if(e.target.id==='his-q'){S.hisQ=e.target.value;$('#his-list').innerHTML=hisList();save()}});
-document.addEventListener('change',e=>{if(e.target.id==='hs-files'&&SH&&SH.k==='his'){[...e.target.files].forEach(f=>SH.files.push({name:f.name,size:f.size}));e.target.value='';$('#hs-flist').innerHTML=fileList()}});
+document.addEventListener('change',e=>{if(e.target.id==='hs-files'&&SH&&SH.k==='his'){[...e.target.files].forEach(f=>SH.files.push({name:f.name,size:f.size,_f:f}));e.target.value='';$('#hs-flist').innerHTML=fileList()}});
 document.addEventListener('change',e=>{if(e.target.id==='sg-age'){$('#sg-ev-w').hidden=e.target.checked;$('#sg-age-t').hidden=!e.target.checked}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 render();
@@ -882,6 +882,52 @@ async function ready(){
 function stopSync(){UNSUB.forEach(f=>f());UNSUB=[];HOG=null;READY=false;CACHE={};for(const k in COLS)S[k]=[]}
 ACT.login=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>{if(e&&e.code==='auth/popup-closed-by-user')return;gate('err',e)});
 ACT.logout=()=>{closeSheet();stopSync();auth.signOut()};
+const DRIVE_ROOT='1ePl7r98j4JrWGMTQORcTVcHqnIR8V6o3',GTOK={},DFOLD={};
+async function gtoken(scope){
+  const c=GTOK[scope];if(c&&c.exp>Date.now())return c.t;
+  const prov=new firebase.auth.GoogleAuthProvider();prov.addScope(scope);prov.setCustomParameters({login_hint:USER.email});
+  const res=await auth.currentUser.reauthenticateWithPopup(prov),t=res&&res.credential&&res.credential.accessToken;
+  if(!t)throw{message:'Google no devolvió el permiso'};
+  GTOK[scope]={t,exp:Date.now()+50*6e4};return t;
+}
+async function gapi(tok,url,opt){const r=await fetch(url,Object.assign({},opt,{headers:Object.assign({Authorization:'Bearer '+tok},(opt&&opt.headers)||{})})),j=await r.json().catch(()=>({}));if(!r.ok)throw{message:(j.error&&j.error.message)||('error '+r.status)};return j}
+async function personFolder(tok,pid){
+  if(DFOLD[pid])return DFOLD[pid];
+  const name=P(pid).name,q="'"+DRIVE_ROOT+"' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false";
+  const l=await gapi(tok,'https://www.googleapis.com/drive/v3/files?fields=files(id,name)&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true&q='+encodeURIComponent(q));
+  let f=(l.files||[]).find(x=>x.name.trim().toLowerCase()===name.trim().toLowerCase());
+  if(!f)f=await gapi(tok,'https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,mimeType:'application/vnd.google-apps.folder',parents:[DRIVE_ROOT]})});
+  return DFOLD[pid]=f.id;
+}
+function shrink(file){
+  if(!/^image\//.test(file.type)||/gif|svg/.test(file.type))return Promise.resolve({blob:file,ext:(file.name.match(/\.[A-Za-z0-9]{1,5}$/)||[''])[0].toLowerCase()});
+  return new Promise(res=>{const im=new Image(),u=URL.createObjectURL(file),raw=()=>{URL.revokeObjectURL(u);res({blob:file,ext:(file.name.match(/\.[A-Za-z0-9]{1,5}$/)||['.jpg'])[0].toLowerCase()})};
+    im.onload=()=>{try{const k=Math.min(1,1800/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?res({blob:b,ext:'.jpg'}):raw()},'image/jpeg',.78)}catch(e){raw()}};
+    im.onerror=raw;im.src=u});
+}
+const _saveHis=ACT.saveHis;
+ACT.saveHis=async(d,b)=>{
+  const pend=SH.files.filter(f=>f._f);if(!pend.length)return _saveHis(d,b);
+  const title=val('hs-title'),date=val('hs-date'),who=val('hs-who');
+  if(!title)return fail('hs-err','Escribí un título o motivo.');if(!date)return fail('hs-err','Elegí la fecha.');
+  const lbl=b.textContent;b.disabled=true;b.textContent='Subiendo a Google Drive…';$('#hs-err').hidden=true;
+  try{
+    const tok=await gtoken('https://www.googleapis.com/auth/drive'),folder=await personFolder(tok,who);
+    const base=date.slice(2,4)+date.slice(5,7)+' - '+cap(title).replace(/[\\/:*?"<>|]/g,' ').replace(/\s+/g,' ').trim();
+    for(const f of pend){
+      const {blob,ext}=await shrink(f._f),i=SH.files.indexOf(f),name=base+(SH.files.length>1?' '+(i+1):'')+ext;
+      b.textContent='Subiendo '+(pend.indexOf(f)+1)+' de '+pend.length+'…';
+      const form=new FormData();form.append('metadata',new Blob([JSON.stringify({name,parents:[folder]})],{type:'application/json'}));form.append('file',blob);
+      const r=await gapi(tok,'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true',{method:'POST',body:form});
+      f.name=name;f.size=blob.size;f.id=r.id;f.url=r.webViewLink||('https://drive.google.com/file/d/'+r.id+'/view');delete f._f;
+    }
+    _saveHis(d,b);
+  }catch(e){
+    b.disabled=false;b.textContent=lbl;$('#hs-flist').innerHTML=fileList();
+    const raw=String((e&&(e.code||e.message))||'error'),hint=/popup-closed|cancelled-popup/.test(raw)?'Se cerró la ventana de Google antes de terminar. Tocá Guardar de nuevo.':/has not been used|is disabled|accessNotConfigured/i.test(raw)?'Falta habilitar la API de Google Drive en el proyecto fliaapp de Google Cloud.':/insufficient|scope|PERMISSION_DENIED/i.test(raw)?'Google no dio el permiso para usar Drive. Tocá Guardar de nuevo y tildá la casilla de Google Drive.':/user-mismatch/.test(raw)?'Elegiste otra cuenta de Google. Usá la misma con la que entraste a la app.':/not found|File not found/i.test(raw)?'Tu cuenta no llega a la carpeta de estudios. Revisá que esté compartida con '+USER.email+'.':/quota|storage/i.test(raw)?'No queda espacio en el Drive de '+USER.email+'.':'No se pudieron subir los archivos.';
+    fail('hs-err',hint+' Detalle: '+raw);
+  }
+};
 ACT.gcalSync=async()=>{
   if(!USER||!READY)return;
   const say=(m,err)=>{window.GMSG=m;window.GERR=!!err;S.tab='tur';S.turSeg='turnos';render()};

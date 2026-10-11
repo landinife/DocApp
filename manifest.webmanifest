@@ -1,6 +1,6 @@
 {
-  "name": "DocApp",
-  "short_name": "DocApp",
+  "name": "SaludApp",
+  "short_name": "SaludApp",
   "description": "Salud de la familia: medicamentos, vacunas, turnos e historia clínica.",
   "lang": "es",
   "start_url": "./",
