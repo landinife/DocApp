@@ -1038,11 +1038,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('#fab');if(b&&S.t
 
 /* listado editable de medicamentos frecuentes: los nuevos nombres se agregan solos */
 const UNI=['comprimido','ml','gotas','cápsula','parche','puff','sobre','aplicación','mg'];
+const cid=n=>'c_'+nk(n).replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40);
 const nk=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 const CAT0=[['Paracetamol','comprimido'],['Paracetamol en gotas','gotas'],['Paracetamol jarabe','ml'],['Ibuprofeno','comprimido'],['Ibuprofeno jarabe','ml'],['Diclofenac','comprimido'],['Dipirona (metamizol)','comprimido'],['Aspirina (ácido acetilsalicílico)','comprimido'],['Naproxeno','comprimido'],['Ketorolac','comprimido'],['Amoxicilina','comprimido'],['Amoxicilina con ácido clavulánico','comprimido'],['Azitromicina','comprimido'],['Cefalexina','cápsula'],['Loratadina','comprimido'],['Cetirizina','comprimido'],['Desloratadina','comprimido'],['Dexametasona','comprimido'],['Salbutamol','puff'],['Omeprazol','cápsula'],['Domperidona','comprimido'],['Metoclopramida','comprimido'],['Butilescopolamina','comprimido'],['Simeticona en gotas','gotas'],['Suero oral','ml'],['Vitamina D en gotas','gotas'],['Ibuprofeno + paracetamol','comprimido']];
 const catHas=n=>S.cat.some(c=>nk(c.name)===nk(n));
-function catAdd(name,qty,unit){name=String(name||'').trim();if(!name||catHas(name))return false;S.cat.push({id:uid(),name,qty:qty>0?qty:1,unit:UNI.includes(unit)?unit:'comprimido'});save();return true}
-if(!S.cat)S.cat=CAT0.map(([name,unit])=>({id:uid(),name,qty:1,unit}));
+function catAdd(name,qty,unit){name=String(name||'').trim();if(!name||catHas(name))return false;S.cat.push({id:cid(name),name,qty:qty>0?qty:1,unit:UNI.includes(unit)?unit:'comprimido'});save();return true}
+if(!S.cat)S.cat=CAT0.map(([name,unit])=>({id:cid(name),name,qty:1,unit}));
 S.meds.forEach(m=>catAdd(m.name,m.qty,m.unit));
 const catSorted=()=>[...S.cat].sort((a,b)=>nk(a.name)<nk(b.name)?-1:1);
 const catByName=n=>S.cat.find(c=>nk(c.name)===nk(n));
@@ -1073,7 +1074,7 @@ Object.assign(ACT,{
   catSave(){const name=val('ca-name'),qty=parseFloat(val('ca-qty'))||1,unit=val('ca-unit'),c=SH.c;
     if(!name)return fail('ca-err','Escribí el nombre.');
     if(S.cat.some(x=>x!==c&&nk(x.name)===nk(name)))return fail('ca-err','Ese medicamento ya está en la lista.');
-    if(c)Object.assign(c,{name,qty,unit});else S.cat.push({id:uid(),name,qty,unit});
+    if(c)Object.assign(c,{name,qty,unit});else S.cat.push({id:cid(name),name,qty,unit});
     save();shCatList();toast('Lista actualizada')},
   catDel(_,b){if(!SH.del){SH.del=true;b.textContent='Tocá de nuevo para confirmar';return}S.cat=S.cat.filter(x=>x!==SH.c);save();shCatList();toast('Quitado de la lista (los remedios ya cargados no cambian)')}
 });
@@ -1120,7 +1121,9 @@ async function ready(){
     if(!meta.exists){const s=seed();S.people=s.people;S.vax=s.vax;S.sug=sugSeed();await ref.set({v:2,at:Date.now(),by:USER.email})}
     else if(!((meta.data()||{}).v>=2)){if(!S.sug.length)S.sug=sugSeed().filter(g=>S.people.some(p=>p.id===g.who));const e=S.people.find(p=>p.id==='euge');if(e&&e.ciclo==null)e.ciclo=true;await ref.set({v:2,at:Date.now(),by:USER.email})}
   }catch(e){READY=false;gate('err',e);return}
-  if(!S.cat.length){CAT0.forEach(([name,unit])=>S.cat.push({id:uid(),name,qty:1,unit}));S.meds.forEach(m=>catAdd(m.name,m.qty,m.unit));save()}
+  try{const cm=HOG.collection('doc_meta').doc('catalogo'),ce=await cm.get();
+    if(!ce.exists&&!S.cat.length){CAT0.forEach(([name,unit])=>S.cat.push({id:cid(name),name,qty:1,unit}));S.meds.forEach(m=>catAdd(m.name,m.qty,m.unit));save();await cm.set({v:1,at:Date.now()})}
+  }catch(e){}
   const p=S.people.find(p=>p.email===USER.email);if(p)S.me=p.id;
   gate('in');render();
 }
