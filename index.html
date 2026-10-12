@@ -176,6 +176,10 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 .sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink)}
 @media (max-width:360px){.pair,.g2{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+.tchart{flex:none;aspect-ratio:320/150;width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.res{white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5;background:var(--surface-2);border-radius:12px;padding:12px 14px;margin:0}
+.sum.ep{border:1.5px solid var(--warn)}
+.pill.cold{background:color-mix(in srgb,var(--p-blue) 16%,transparent);color:var(--p-blue)}
 </style>
 
 <div id="gate" class="gate"><div class="gate-card">
@@ -300,9 +304,9 @@ function seed(){
       {id:'s_euge_cli',who:'euge',what:'Control clínico',every:12,last:'',notes:''},{id:'s_euge_odo',who:'euge',what:'Odontólogo',every:6,last:'',notes:''},{id:'s_euge_gin',who:'euge',what:'Control ginecológico',every:12,last:'',notes:''}],
     ciclo:[[-75,5],[-47,5],[-18,4]].flatMap(([a,n])=>Array.from({length:n},(_,i)=>{const date=iso(t0+(a+i)*D+12*H);return {id:'euge_'+date,who:'euge',date,flow:i===0?2:i===1?3:i<n-1?2:1,sym:i<2?['Cólicos']:[],mood:[],notes:'',demo:true}}))};
 }
-const COLS={people:'doc_people',meds:'doc_meds',vax:'doc_vax',turnos:'doc_turnos',controles:'doc_controles',hist:'doc_hist',sug:'doc_sug',ciclo:'doc_ciclo'};
-const UIK=['me','filter','tab','medSeg','turSeg','hisType','hisQ','accent'];
-let S={v:3,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:false,people:[],meds:[],vax:[],turnos:[],controles:[],hist:[],sug:[],ciclo:[]};
+const COLS={people:'doc_people',meds:'doc_meds',vax:'doc_vax',turnos:'doc_turnos',controles:'doc_controles',hist:'doc_hist',sug:'doc_sug',ciclo:'doc_ciclo',epi:'doc_epi',cat:'doc_catalogo'};
+const UIK=['me','filter','tab','medSeg','turSeg','hisType','hisQ','accent','hisSeg','alert'];
+let S={v:3,me:'fabri',filter:'all',tab:'hoy',medSeg:'activos',turSeg:'turnos',hisType:'all',hisQ:'',demo:false,people:[],meds:[],vax:[],turnos:[],controles:[],hist:[],sug:[],ciclo:[],epi:[],cat:[]};
 try{const u=JSON.parse(localStorage.getItem(KEY+'-ui')||'{}');UIK.forEach(k=>{if(u[k]!=null)S[k]=u[k]})}catch(e){}
 let db=null,auth=null,HOG=null,CACHE={},READY=false,USER=null,UNSUB=[];
 function save(){
@@ -597,11 +601,12 @@ function shPrn(){
   sheet('Registrar dosis',`<dl class="kv"><dt>Medicamento</dt><dd>${esc(m.name)} · ${dose(m)}</dd><dt>Para</dt><dd>${esc(P(m.who).name)}</dd><dt>Última dosis</dt><dd>${last?fdt(last.t):'Ninguna'}</dd><dt>Intervalo mínimo</dt><dd>${fq(m)}</dd>${m.notes?`<dt>Indicaciones</dt><dd>${esc(m.notes)}</dd>`:''}</dl>
   ${early?`<div class="note"><span>Todavía no pasó el intervalo mínimo (${fq(m)}) desde la última dosis. Se puede repetir ${whenTxt(last.t+m.every*H)}.</span></div><button class="btn danger" data-act="okPrn">Registrar igual, ahora ${hm(Date.now())}</button>`:`<button class="btn" data-act="okPrn">Registrar dosis ahora, ${hm(Date.now())}</button>`}`);
 }
-function shMed(m){
-  const e=m||{name:'',who:defWho(),qty:1,unit:'comprimido',mode:'sched',every:8,first:Date.now(),end:null,food:'',notes:'',stock:null,stockMin:3};
+function shMed(m,pre){
+  const e=m||Object.assign({name:'',who:defWho(),qty:1,unit:'comprimido',mode:'sched',every:8,first:Date.now(),end:null,food:'',notes:'',stock:null,stockMin:3},pre||{});
   const eu=e.eu||'h', f=new Date(e.first||Date.now()), days=e.end?Math.round((e.end-e.first)/D):7;
-  SH={k:'med',m,mode:e.mode,dur:e.end?'fin':'perm',cyc:e.off>0,del:false};
-  sheet(m?'Editar medicamento':'Nuevo medicamento',`
+  SH={k:'med',m,epi:m?m.epi:pre&&pre.epi,mode:e.mode,dur:e.end?'fin':'perm',cyc:e.off>0,del:false};
+  const ep=SH.epi&&S.epi&&S.epi.find(x=>x.id===SH.epi);
+  sheet(m?'Editar medicamento':'Nuevo medicamento',`${ep?`<div class="note info"><span>Tratamiento para el episodio "${esc(ep.title)}" de ${esc(P(ep.who).name)}.</span></div>`:''}
     <label class="f"><span>Nombre</span><input id="md-name" value="${esc(e.name)}" placeholder="Ej.: Amoxicilina"></label>
     <div class="g2"><label class="f"><span>Quién lo toma</span><select id="md-who">${opts(e.who)}</select></label>
     <label class="f"><span>Con comida</span><select id="md-food"><option value="">Indistinto</option><option value="con" ${e.food==='con'?'selected':''}>Con comida</option><option value="ayunas" ${e.food==='ayunas'?'selected':''}>En ayunas</option></select></label></div>
@@ -846,6 +851,245 @@ document.addEventListener('input',e=>{if(e.target.id==='his-q'){S.hisQ=e.target.
 document.addEventListener('change',e=>{if(e.target.id==='hs-files'&&SH&&SH.k==='his'){[...e.target.files].forEach(f=>SH.files.push({name:f.name,size:f.size,_f:f}));e.target.value='';$('#hs-flist').innerHTML=fileList()}});
 document.addEventListener('change',e=>{if(e.target.id==='sg-age'){$('#sg-ev-w').hidden=e.target.checked;$('#sg-age-t').hidden=!e.target.checked}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+/* ---------- síntomas: episodios con mediciones ---------- */
+const SYMS=['Fiebre','Tos','Mocos','Dolor de garganta','Dolor de oído','Vómitos','Diarrea','Sarpullido','Dolor de panza','Dolor de cabeza','Decaimiento','No come','Irritable'];
+const EPT=['Fiebre','Temperatura baja','Resfrío','Gastroenteritis','Alergia','Golpe o caída'];
+const fT=t=>t==null||t===''?'':Number(t).toFixed(1).replace('.',',')+' °C';
+/* colores: azul si está baja (menos de 36), verde normal, naranja febrícula, rojo fiebre */
+const tK=t=>t==null||t===''?'':t<36?'cold':t>=38?'late':t>=37.5?'soon':'ok';
+const dtl=t=>iso(t)+'T'+hm(t);
+const dur=ms=>{const h=Math.max(0,Math.round(ms/H));return h<1?'menos de 1 hora':h<48?h+(h===1?' hora':' horas'):Math.round(h/24)+' días'};
+const ageTxt=p=>{if(!p.birth)return'';const m=Math.floor((Date.now()-pd(p.birth))/(30.44*D));return m<24?m+(m===1?' mes':' meses'):Math.floor(m/12)+' años'};
+const epOpen=()=>S.epi.filter(e=>!e.end&&show(e)).sort((a,b)=>b.start-a.start);
+const epTemps=e=>e.entries.filter(x=>x.temp!=null&&x.temp!=='').sort((a,b)=>a.t-b.t);
+const epLast=e=>e.entries.slice().sort((a,b)=>b.t-a.t)[0];
+const epMax=e=>{const ts=epTemps(e);return ts.length?Math.max(...ts.map(x=>+x.temp)):null};
+const epMin=e=>{const ts=epTemps(e);return ts.length?Math.min(...ts.map(x=>+x.temp)):null};
+function epAlerts(e){
+  const out=[],mx=epMax(e),mn=epMin(e),fev=epTemps(e).filter(x=>x.temp>=38),p=P(e.who);
+  if(mx!=null&&mx>=S.alert.temp)out.push('Llegó a '+fT(mx)+'.');
+  if(mn!=null&&mn<S.alert.low)out.push('Bajó a '+fT(mn)+'.');
+  if(fev.length&&!e.end){const h=(Date.now()-fev[0].t)/H;if(h>S.alert.hours)out.push('Lleva más de '+S.alert.hours+' horas con fiebre.')}
+  if(fev.length&&p.birth&&(Date.now()-pd(p.birth))<91*D)out.push('En bebés de menos de 3 meses cualquier fiebre se consulta enseguida.');
+  return out;
+}
+function alertNote(e){const a=epAlerts(e);if(!a.length)return'';const p=P(e.who);
+  return `<div class="note"><span><b>Conviene consultar al médico.</b> ${a.join(' ')}</span>${p.tel?`<a class="btn sm" style="text-decoration:none;background:var(--warn);color:#fff" href="tel:${esc(p.tel)}">Llamar</a>`:''}</div>`}
+function chart(e){
+  const ts=epTemps(e);if(!ts.length)return'';
+  const t0=Math.min(e.start,ts[0].t),t1=Math.max(ts[ts.length-1].t,t0+6*H,e.next||0),W=320,Hh=150,L=30,R=8,T=10,B=22;
+  const lo=Math.min(35.5,Math.floor((epMin(e)-.3)*2)/2),hi=Math.max(40.5,Math.ceil((epMax(e)+.3)*2)/2),x=t=>L+(t-t0)/(t1-t0)*(W-L-R),y=v=>T+(hi-v)/(hi-lo)*(Hh-T-B);
+  const ln=(v,c,dash,lbl)=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="1" ${dash?'stroke-dasharray="4 4"':''}/><text x="${L-4}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${lbl}</text>`;
+  const pts=ts.map(p=>x(p.t).toFixed(1)+','+y(+p.temp).toFixed(1)).join(' ');
+  const col={late:'var(--danger)',soon:'var(--warn)',ok:'var(--ok)',cold:'var(--p-blue)'};
+  return `<svg class="tchart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Temperatura del episodio, máxima ${fT(epMax(e))}">
+    ${ln(36,'var(--p-blue)',1,'36')}${lo<S.alert.low?ln(S.alert.low,'var(--p-blue)',1,String(S.alert.low).replace('.',',')):''}${ln(37,'var(--line)',0,'37')}${ln(38,'var(--warn)',1,'38')}${S.alert.temp>38?ln(S.alert.temp,'var(--danger)',1,String(S.alert.temp).replace('.',',')):''}${ln(40,'var(--line)',0,'40')}
+    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${ts.map(p=>`<circle cx="${x(p.t).toFixed(1)}" cy="${y(+p.temp).toFixed(1)}" r="4" fill="${col[tK(+p.temp)]}" stroke="var(--surface)" stroke-width="1.5"/>`).join('')}
+    <text x="${L}" y="${Hh-6}" font-size="10" fill="var(--muted)">${whenTxt(t0)}</text><text x="${W-R}" y="${Hh-6}" font-size="10" fill="var(--muted)" text-anchor="end">${whenTxt(t1)}</text></svg>`;
+}
+function epCard(e){
+  const l=epLast(e),dia=Math.floor((sod(Date.now())-sod(e.start))/D)+1;
+  return `<div class="sum ep"><div><div class="label">Síntomas en curso · ${esc(P(e.who).name)}</div><div class="big">${esc(e.title)} · día ${dia}</div>
+    <div class="sub">${l?`Última medición ${whenTxt(l.t)}${l.temp!=null&&l.temp!==''?': <span class="pill ${tK(+l.temp)}">'+fT(l.temp)+'</span>':''}.`:'Sin mediciones todavía.'}${e.next?` Volver a medir ${e.next<Date.now()?'<b>ya</b> (tocaba '+whenTxt(e.next)+')':'a las '+whenTxt(e.next)}.`:''}</div></div>
+    ${alertNote(e)}
+    <div class="g2"><button class="btn" data-act="mdNew" data-id="${e.id}">Agregar medición</button><button class="btn ghost" data-act="epView" data-id="${e.id}">Ver episodio</button></div></div>`;
+}
+const _vHoy=vHoy;
+vHoy=function(){const o=epOpen();return (o.length?o.map(epCard).join(''):`<button class="btn ghost" data-act="epNew">Registrar síntomas o fiebre</button>`)+_vHoy()};
+
+/* historia: episodios en curso arriba y los cerrados mezclados con el resto, como tipo "Síntomas" */
+function hisRow(e){
+  if(e._ep){const ep=e._ep,mx=epMax(ep);return `<button class="row" data-act="epView" data-id="${ep.id}"><span class="body"><span class="t1">${esc(ep.title)} ${ep.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(ep.who)}<span>${fd(e.date)}</span><span>${dur((ep.end||Date.now())-ep.start)}</span></span><span class="t2"><span class="pill load">Síntomas</span>${mx!=null?`<span class="pill ${tK(mx)}">Máx. ${fT(mx)}</span>`:''}${epMin(ep)!=null&&epMin(ep)<36?`<span class="pill cold">Mín. ${fT(epMin(ep))}</span>`:''}<span class="pill">${ep.entries.length} medici${ep.entries.length===1?'ón':'ones'}</span></span></span></button>`}
+  return `<button class="row" data-act="editHis" data-id="${e.id}"><span class="body"><span class="t1">${esc(e.title)} ${e.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(e.who)}<span>${fd(e.date)}</span>${e.esp?`<span>${esc(e.esp)}</span>`:''}${e.prof?`<span>${esc(e.prof)}</span>`:''}</span><span class="t2"><span class="pill load">${HT[e.type]}</span>${e.files.length?`<span class="pill">${e.files.length} archivo${e.files.length>1?'s':''}</span>`:''}</span></span></button>`;
+}
+const _vHis=vHis;
+vHis=function(){
+  const seg=S.hisSeg||'estudios';
+  let h=`<div class="seg" role="group"><button data-seg="hisSeg:estudios" aria-pressed="${seg==='estudios'}">Estudios y consultas</button><button data-seg="hisSeg:episodios" aria-pressed="${seg==='episodios'}">Episodios</button></div>`;
+  if(seg==='estudios')return h+_vHis();
+  const o=epOpen(),done=S.epi.filter(x=>x.end&&show(x)).sort((a,b)=>b.start-a.start);
+  h+=`<section class="sec"><div class="sec-h"><span class="label">En curso</span><button class="btn sm ghost" data-act="epNew">Nuevo episodio</button></div><div class="list">${o.map(ep=>{const l=epLast(ep),nt=epMeds(ep).length;return `<button class="row" data-act="epView" data-id="${ep.id}"><span class="body"><span class="t1">${esc(ep.title)} ${ep.demo?'<span class="tag">ejemplo</span>':''}</span><span class="t2">${who(ep.who)}<span>Desde ${whenTxt(ep.start)}</span>${l&&l.temp!=null&&l.temp!==''?`<span class="pill ${tK(+l.temp)}">${fT(l.temp)}</span>`:''}${nt?`<span class="pill load">${nt===1?'1 tratamiento':nt+' tratamientos'}</span>`:''}</span></span></button>`}).join('')||'<div class="empty">Nada en curso. Si alguien se siente mal, tocá Nuevo episodio y andá anotando cómo sigue.</div>'}</div></section>`;
+  const by={};done.forEach(ep=>(by[iso(ep.start).slice(0,4)]??=[]).push(ep));
+  h+=Object.keys(by).sort().reverse().map(y=>`<section class="sec"><div class="sec-h"><span class="label">${y}</span><span class="count">${by[y].length}</span></div><div class="list">${by[y].map(ep=>hisRow({_ep:ep,date:iso(ep.start)})).join('')}</div></section>`).join('');
+  if(!done.length)h+=`<p class="foot" style="margin:0">Los episodios cerrados quedan acá, con su gráfico y su resumen.</p>`;
+  return h;
+};
+
+/* ajustes: umbrales de alerta */
+const _vCfg=vCfg;
+vCfg=function(){return _vCfg().replace('<section class="sec"><h2>Emergencias</h2>',`<section class="sec"><h2>Alertas de síntomas</h2><div class="g2"><label class="f"><span>Avisar desde (°C)</span><input id="al-temp" type="number" step="0.1" min="37" max="42" inputmode="decimal" value="${S.alert.temp}"></label><label class="f"><span>Si la fiebre dura más de (horas)</span><input id="al-hours" type="number" step="1" min="6" inputmode="numeric" value="${S.alert.hours}"></label></div><label class="f"><span>Avisar si baja de (°C)</span><input id="al-low" type="number" step="0.1" min="32" max="36.5" inputmode="decimal" value="${S.alert.low}"></label><p class="foot" style="text-align:left;margin:0">Valores orientativos. Ajustalos a lo que indique el pediatra o el médico de cabecera.</p></section><section class="sec"><h2>Emergencias</h2>`)};
+document.addEventListener('change',e=>{const k={'al-temp':'temp','al-hours':'hours','al-low':'low'}[e.target.id];if(k){const v=parseFloat(e.target.value);if(v>0){S.alert[k]=v;save();toast('Alerta guardada')}}});
+
+/* hojas */
+function shEpNew(){
+  SH={k:'epnew',title:'Fiebre'};
+  sheet('Registrar síntomas',`<label class="f"><span>Para quién</span><select id="ep-who">${opts(defWho()==='fabri'&&S.people.some(p=>p.id==='juli')&&S.filter==='all'?'juli':defWho())}</select></label>
+    <div class="stack"><span class="label">Qué le pasa</span><div class="chipw">${EPT.map(t=>`<button class="chip all" data-act="epT" data-t="${t}" aria-pressed="${SH.title===t}">${t}</button>`).join('')}</div>
+    <label class="f"><span>Título del episodio</span><input id="ep-title" value="Fiebre" placeholder="Ej.: fiebre y tos"></label></div>
+    <label class="f"><span>Cuándo empezó</span><input id="ep-start" type="datetime-local" value="${dtl(Date.now())}"></label>
+    <div class="err" id="ep-err" hidden></div><button class="btn" data-act="epCreate">Crear y cargar la primera medición</button>`);
+}
+function shEp(e){
+  SH={k:'ep',e,del:false};
+  const mx=epMax(e),ents=e.entries.slice().sort((a,b)=>b.t-a.t);
+  sheet(e.title+' de '+P(e.who).name,`<dl class="kv"><dt>Empezó</dt><dd>${fdt(e.start)}</dd><dt>${e.end?'Duró':'Lleva'}</dt><dd>${dur((e.end||Date.now())-e.start)}</dd><dt>Temperatura máxima</dt><dd>${mx!=null?`<span class="pill ${tK(mx)}">${fT(mx)}</span>`:'Sin medir'}</dd><dt>Estado</dt><dd>${e.end?'Terminó el '+fdt(e.end):'En curso'}</dd></dl>
+    ${alertNote(e)}${chart(e)}
+    ${!e.end&&e.next?`<div class="note info"><span>Volver a medir ${e.next<Date.now()?'ya (tocaba '+whenTxt(e.next)+')':'a las '+whenTxt(e.next)}. Llega un aviso a los teléfonos.</span></div>`:''}
+    ${!e.end?`<button class="btn" data-act="mdNew" data-id="${e.id}">Agregar medición</button>`:''}
+    <div class="stack"><span class="label">Mediciones y anotaciones</span><div class="list" style="box-shadow:none;border:1px solid var(--line)">${ents.map(x=>`<button class="row" data-act="mdEdit" data-id="${e.id}" data-x="${x.id}"><span class="time" style="width:auto;min-width:46px">${hm(x.t)}</span><span class="body"><span class="t1">${x.temp!=null&&x.temp!==''?`<span class="pill ${tK(+x.temp)}">${fT(x.temp)}</span> `:''}${esc([...x.sym,x.other].filter(Boolean).join(', '))||(x.temp!=null&&x.temp!==''?'':'Anotación')}</span><span class="t2">${sod(x.t)!==sod(Date.now())?`<span>${dayName(x.t)}</span>`:''}${x.med?`<span>Se dio ${esc(x.med.name)} ${esc(x.med.dose)}</span>`:''}${x.notes?`<span>${esc(x.notes)}</span>`:''}${x.photos&&x.photos.length?`<span class="pill">${x.photos.length} foto${x.photos.length>1?'s':''}</span>`:''}<span>anotó ${esc(P(x.by).name)}</span></span></span></button>`).join('')||'<div class="empty">Sin mediciones.</div>'}</div></div>
+    <button class="btn ghost" data-act="epRes">Resumen para el pediatra</button>
+    ${e.end?'<button class="btn ghost" data-act="epReopen">Reabrir el episodio</button>':'<button class="btn ghost" data-act="epClose">Ya está bien: cerrar el episodio</button>'}
+    <button class="btn danger" data-act="epDel">Eliminar episodio</button>`);
+}
+function shMd(e,x){
+  const v=x||{t:Date.now(),temp:'',sym:[],other:'',med:null,notes:'',photos:[]};
+  const ms=S.meds.filter(m=>m.who===e.who&&active(m));
+  SH={k:'md',e,x,sym:[...v.sym],next:x?null:(e.next&&e.next>Date.now()?null:2),photos:[...(v.photos||[])],del:false};
+  const medSel=v.med?(v.med.id||'otro'):'';
+  sheet(x?'Editar medición':'Nueva medición · '+P(e.who).name,`<div class="g2"><label class="f"><span>Cuándo</span><input id="md-t" type="datetime-local" value="${dtl(v.t)}"></label><label class="f"><span>Temperatura (°C)</span><input id="md-temp" type="number" step="0.1" min="30" max="43" inputmode="decimal" placeholder="Ej.: 38.2" value="${v.temp??''}"></label></div>
+    <div class="stack"><span class="label">Síntomas</span><div class="chipw">${SYMS.map(t=>`<button class="chip all" data-act="mdSym" data-t="${t}" aria-pressed="${SH.sym.includes(t)}">${t}</button>`).join('')}</div>
+    <label class="f"><span>Otro síntoma (opcional)</span><input id="md-other" value="${esc(v.other)}"></label></div>
+    <div class="g2"><label class="f"><span>Se le dio</span><select id="md-med"><option value="">Nada</option>${ms.map(m=>`<option value="${m.id}" ${medSel===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}<option value="otro" ${medSel==='otro'?'selected':''}>Otro</option></select></label><label class="f"><span>Dosis o nombre</span><input id="md-dose" value="${esc(v.med?(v.med.id?v.med.dose:v.med.name+' '+v.med.dose):'')}" placeholder="Ej.: 3 ml"></label></div>
+    <p class="foot" style="text-align:left;margin:0">Si elegís un medicamento de la lista, la dosis queda registrada también en Remedios y descuenta del stock.</p>
+    <label class="f"><span>Notas</span><textarea id="md-notes" placeholder="Cómo está, qué comió, si durmió…">${esc(v.notes)}</textarea></label>
+    <div class="stack"><span class="label">Fotos (opcional)</span><div id="md-ph">${phList()}</div><label class="f"><span>Agregar foto</span><input id="md-photo" type="file" accept="image/*" multiple></label><p class="foot" style="text-align:left;margin:0">Al guardar se suben a la carpeta de la persona en Google Drive.</p></div>
+    ${x?'':`<div class="stack"><span class="label">Volver a medir</span><div class="seg">${[['','No'],['1','1 h'],['2','2 h'],['3','3 h'],['4','4 h']].map(([n,t])=>`<button data-act="mdNext" data-n="${n}" aria-pressed="${String(SH.next??'')===n}">${t}</button>`).join('')}</div></div>`}
+    <div class="err" id="md-err" hidden></div><button class="btn" data-act="mdSave">Guardar</button>${x?'<button class="btn danger" data-act="mdDel">Eliminar esta medición</button>':''}`);
+}
+const phList=()=>SH.photos.length?`<div class="chipw">${SH.photos.map((f,i)=>`<span class="pill">${esc(f.name)}</span>`).join('')}</div>`:'';
+document.addEventListener('change',e=>{if(e.target.id==='md-photo'&&SH&&SH.k==='md'){[...e.target.files].forEach(f=>SH.photos.push({name:f.name,_f:f}));e.target.value='';$('#md-ph').innerHTML=phList()}});
+document.addEventListener('change',e=>{if(e.target.id==='md-med'&&SH&&SH.k==='md'){const m=S.meds.find(x=>x.id===e.target.value);if(m)$('#md-dose').value=m.qty+' '+m.unit}});
+function resumenEp(e){
+  const p=P(e.who),L=[e.title+' de '+p.name+(ageTxt(p)?' ('+ageTxt(p)+')':''),'Desde '+fdt(e.start)+(e.end?' hasta '+fdt(e.end):' · sigue en curso')+' · '+dur((e.end||Date.now())-e.start)];
+  const mx=epMax(e),mn=epMin(e);if(mx!=null)L.push('Temperatura máxima: '+fT(mx)+(mn<36?' · mínima: '+fT(mn):''));
+  const meds={};e.entries.forEach(x=>{if(x.med){const k=x.med.name;meds[k]=(meds[k]||0)+1}});
+  if(Object.keys(meds).length)L.push('Medicación dada: '+Object.entries(meds).map(([k,n])=>k+' ('+n+(n===1?' vez':' veces')+')').join(', '));
+  L.push('','Mediciones:');
+  e.entries.slice().sort((a,b)=>a.t-b.t).forEach(x=>L.push('- '+fd(iso(x.t)).slice(0,5)+' '+hm(x.t)+[x.temp!=null&&x.temp!==''?fT(x.temp):'',[...x.sym,x.other].filter(Boolean).join(', ').toLowerCase(),x.med?'se dio '+x.med.name+' '+x.med.dose:'',x.notes].filter(Boolean).map(s=>' · '+s).join('')));
+  return L.join('\n');
+}
+Object.assign(ACT,{
+  epNew(){shEpNew()},
+  epT(d,b){SH.title=d.t;$('#ep-title').value=d.t;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))},
+  epCreate(){const title=val('ep-title'),st=new Date(val('ep-start')).getTime();if(!title)return fail('ep-err','Escribí qué le pasa.');if(!(st>0))return fail('ep-err','Elegí cuándo empezó.');
+    const e={id:uid(),who:val('ep-who'),title:cap(title),start:Math.min(st,Date.now()),end:null,next:null,entries:[]};S.epi.push(e);render();shMd(e)},
+  epView(d){const e=S.epi.find(x=>x.id===d.id);if(e)shEp(e)},
+  mdNew(d){const e=S.epi.find(x=>x.id===d.id);if(e)shMd(e)},
+  mdEdit(d){const e=S.epi.find(x=>x.id===d.id);shMd(e,e.entries.find(x=>x.id===d.x))},
+  mdSym(d,b){const i=SH.sym.indexOf(d.t);i>=0?SH.sym.splice(i,1):SH.sym.push(d.t);b.setAttribute('aria-pressed',i<0)},
+  mdNext(d,b){SH.next=d.n?+d.n:null;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b))},
+  mdSave(){const {e,x}=SH,t=new Date(val('md-t')).getTime(),tr=val('md-temp').replace(',','.'),temp=tr===''?null:parseFloat(tr);
+    if(!(t>0))return fail('md-err','Elegí cuándo.');if(t>Date.now()+5*6e4)return fail('md-err','La medición no puede ser futura.');
+    if(temp!=null&&(isNaN(temp)||temp<30||temp>43))return fail('md-err','Revisá la temperatura: tiene que estar entre 30 y 43 °C.');
+    const mid=val('md-med'),m=S.meds.find(y=>y.id===mid),doseTxt=val('md-dose');
+    const cm=mid.startsWith('c:')?S.cat.find(c=>'c:'+c.id===mid):null,on=val('md-oname');if(mid==='otro'&&!on)return fail('md-err','Escribí el nombre del medicamento.');
+    const med=m?{id:m.id,name:m.name,dose:doseTxt||m.qty+' '+m.unit}:cm?{id:'',name:cm.name,dose:doseTxt||cm.qty+' '+cm.unit}:mid==='otro'?{id:'',name:on,dose:doseTxt}:null;
+    if(mid==='otro'&&temp==null&&false){}
+    if(mid==='otro'){const u=(doseTxt.match(/ml|mg|gotas|comprimido|cápsula|sobre|puff/i)||[''])[0].toLowerCase();if(catAdd(on,parseFloat(doseTxt.replace(',','.'))||1,u))setTimeout(()=>toast('"'+on+'" se agregó a medicamentos frecuentes'),50)}
+    if(temp==null&&!SH.sym.length&&!val('md-other')&&!med&&!val('md-notes')&&!SH.photos.length)return fail('md-err','Cargá la temperatura, un síntoma o una nota.');
+    const o={t,temp,sym:SH.sym,other:val('md-other'),med,notes:val('md-notes'),photos:SH.photos,by:S.me};
+    if(x)Object.assign(x,o);else{e.entries.push(Object.assign({id:uid()},o));if(m){m.logs.push({s:t,t,by:S.me});if(m.stock!=null)m.stock=Math.max(0,m.stock-1)}e.next=SH.next?t+SH.next*H:null}
+    closeSheet();render();shEp(e);toast(x?'Medición actualizada':SH&&e.next?'Medición guardada. Aviso para volver a medir a las '+hm(e.next):'Medición guardada')},
+  mdDel(_,b){if(!SH.del){SH.del=true;b.textContent='Tocá de nuevo para confirmar';return}const {e,x}=SH;e.entries=e.entries.filter(y=>y!==x);closeSheet();render();shEp(e)},
+  epClose(){const e=SH.e;e.end=Math.max(Date.now(),...e.entries.map(x=>x.t));e.next=null;closeSheet();render();toast('Episodio cerrado: queda en la historia clínica')},
+  epReopen(){const e=SH.e;e.end=null;closeSheet();render();shEp(e)},
+  epDel(_,b){if(!SH.del){SH.del=true;b.textContent='Tocá de nuevo para confirmar';return}S.epi=S.epi.filter(y=>y!==SH.e);closeSheet();render();toast('Episodio eliminado')},
+  epRes(){const e=SH.e,t=resumenEp(e);SH={k:'res',e,text:t};sheet('Resumen para el pediatra',`<pre class="res">${esc(t)}</pre><button class="btn" data-act="epShare">Compartir (Share)</button><button class="btn ghost" data-act="epCopy">Copiar</button><button class="btn ghost" data-act="epView" data-id="${e.id}">Volver al episodio</button>`)},
+  epShare(){const t=SH.text;(navigator.share?navigator.share({text:t}):Promise.reject()).catch(()=>ACT.epCopy())},
+  epCopy(){(navigator.clipboard?navigator.clipboard.writeText(SH.text):Promise.reject()).then(()=>toast('Resumen copiado')).catch(()=>toast('No se pudo copiar'))}
+});
+
+/* datos de ejemplo de síntomas (se agregan sin tocar lo ya cargado en la vista previa) */
+S.alert=Object.assign({temp:39,hours:48,low:35.5},S.alert||{});
+if(!S.epi){const now=Date.now(),anti=S.meds.find(m=>m.who==='juli'&&m.mode==='prn');
+  S.epi=[{id:uid(),who:'juli',title:'Fiebre',start:now-4*H,end:null,next:now+40*6e4,demo:true,entries:[
+      {id:uid(),t:now-3.8*H,temp:38.6,sym:['Fiebre','Decaimiento'],other:'',med:anti?{id:anti.id,name:anti.name,dose:anti.qty+' '+anti.unit}:null,notes:'Se levantó caliente y llorando.',photos:[],by:'euge'},
+      {id:uid(),t:now-2.3*H,temp:38.1,sym:['Mocos'],other:'',med:null,notes:'',photos:[],by:'euge'},
+      {id:uid(),t:now-80*6e4,temp:37.4,sym:['Mocos'],other:'',med:null,notes:'Comió un poco de fruta.',photos:[],by:'fabri'}]},
+    {id:uid(),who:'fabri',title:'Gastroenteritis',start:sod(now)-70*D+9*H,end:sod(now)-68*D+20*H,next:null,demo:true,entries:[
+      {id:uid(),t:sod(now)-70*D+9*H,temp:37.8,sym:['Vómitos','Dolor de panza'],other:'',med:null,notes:'',photos:[],by:'fabri'},
+      {id:uid(),t:sod(now)-69*D+21*H,temp:37.1,sym:['Diarrea'],other:'',med:null,notes:'Mucho mejor, a dieta blanda.',photos:[],by:'fabri'}]}];
+  save()}
+const _clear=ACT.clearDemo;ACT.clearDemo=(...a)=>{S.epi=S.epi.filter(x=>!x.demo);_clear(...a)};
+
+/* tratamientos indicados durante un episodio: son medicamentos normales de la app, marcados con el episodio */
+const epMeds=e=>S.meds.filter(m=>m.epi===e.id);
+function epTreat(e){
+  const ms=epMeds(e);
+  return `<div class="stack"><span class="label">Tratamiento</span>${ms.length?`<div class="list" style="box-shadow:none;border:1px solid var(--line)">${ms.map(m=>{const n=m.logs.filter(l=>!l.skip).length,fin=m.end&&m.end<Date.now();
+    return `<button class="row" data-act="editMed" data-m="${m.id}">${mic(m)}<span class="body"><span class="t1">${esc(m.name)} · ${dose(m)}</span><span class="t2"><span>${m.mode==='prn'?'Si hace falta':'Cada '+fq(m)}</span>${m.end?`<span>hasta ${fd(iso(m.end))}</span>`:''}<span>${n} toma${n===1?'':'s'} dada${n===1?'':'s'}</span></span></span><span class="pill ${fin?'ok':'load'}">${fin?'Terminado':'En curso'}</span></button>`}).join('')}</div>`:'<p class="foot" style="text-align:left;margin:0">Si el médico indica un medicamento, cargalo acá: aparece en Hoy y en Remedios con sus horarios y avisos, como cualquier otro.</p>'}
+    ${e.end?'':`<button class="btn ghost" data-act="epMed" data-id="${e.id}">Indicar un medicamento</button>`}</div>`;
+}
+const _shEp=shEp;
+shEp=function(e){_shEp(e);const lbl=[...document.querySelectorAll('.sheet .stack .label')].find(x=>x.textContent==='Mediciones y anotaciones');if(lbl)lbl.parentElement.insertAdjacentHTML('beforebegin',epTreat(e))};
+ACT.epMed=d=>{const e=S.epi.find(x=>x.id===d.id);shMed(null,{who:e.who,epi:e.id,end:Date.now()+5*D,first:Date.now()})};
+const _saveMed=ACT.saveMed;
+ACT.saveMed=(...a)=>{const epi=SH.epi,nuevo=!SH.m,n=S.meds.length;_saveMed(...a);
+  if(epi&&nuevo&&S.meds.length>n){S.meds[S.meds.length-1].epi=epi;save();render();const e=S.epi.find(x=>x.id===epi);if(e){shEp(e);toast('Tratamiento indicado: ya aparece en Hoy con sus horarios')}}};
+const _resumenEp=resumenEp;
+resumenEp=function(e){const t=_resumenEp(e),ms=epMeds(e);if(!ms.length)return t;
+  const L=ms.map(m=>'- '+m.name+', '+m.qty+' '+m.unit+(m.mode==='prn'?' si hace falta':' cada '+fq(m))+' desde '+fdt(m.first)+(m.end?' hasta '+fd(iso(m.end)):'')+' ('+m.logs.filter(l=>!l.skip).length+' tomas dadas)');
+  return t.replace('\n\nMediciones:','\n\nTratamiento indicado:\n'+L.join('\n')+'\n\nMediciones:')};
+/* el + de Historia abre un episodio cuando está en la parte de Episodios */
+document.addEventListener('click',e=>{const b=e.target.closest('#fab');if(b&&S.tab==='his'&&S.hisSeg==='episodios'){e.stopImmediatePropagation();shEpNew()}},true);
+
+
+/* listado editable de medicamentos frecuentes: los nuevos nombres se agregan solos */
+const UNI=['comprimido','ml','gotas','cápsula','parche','puff','sobre','aplicación','mg'];
+const nk=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+const CAT0=[['Paracetamol','comprimido'],['Paracetamol en gotas','gotas'],['Paracetamol jarabe','ml'],['Ibuprofeno','comprimido'],['Ibuprofeno jarabe','ml'],['Diclofenac','comprimido'],['Dipirona (metamizol)','comprimido'],['Aspirina (ácido acetilsalicílico)','comprimido'],['Naproxeno','comprimido'],['Ketorolac','comprimido'],['Amoxicilina','comprimido'],['Amoxicilina con ácido clavulánico','comprimido'],['Azitromicina','comprimido'],['Cefalexina','cápsula'],['Loratadina','comprimido'],['Cetirizina','comprimido'],['Desloratadina','comprimido'],['Dexametasona','comprimido'],['Salbutamol','puff'],['Omeprazol','cápsula'],['Domperidona','comprimido'],['Metoclopramida','comprimido'],['Butilescopolamina','comprimido'],['Simeticona en gotas','gotas'],['Suero oral','ml'],['Vitamina D en gotas','gotas'],['Ibuprofeno + paracetamol','comprimido']];
+const catHas=n=>S.cat.some(c=>nk(c.name)===nk(n));
+function catAdd(name,qty,unit){name=String(name||'').trim();if(!name||catHas(name))return false;S.cat.push({id:uid(),name,qty:qty>0?qty:1,unit:UNI.includes(unit)?unit:'comprimido'});save();return true}
+if(!S.cat)S.cat=CAT0.map(([name,unit])=>({id:uid(),name,qty:1,unit}));
+S.meds.forEach(m=>catAdd(m.name,m.qty,m.unit));
+const catSorted=()=>[...S.cat].sort((a,b)=>nk(a.name)<nk(b.name)?-1:1);
+const catByName=n=>S.cat.find(c=>nk(c.name)===nk(n));
+
+/* en el formulario de medicamento: nombre con sugerencias */
+const _shMed2=shMed;
+shMed=function(m,pre){_shMed2(m,pre);const i=document.getElementById('md-name');if(!i)return;
+  i.setAttribute('list','cat-list');i.setAttribute('autocomplete','off');i.placeholder='Escribí o elegí de la lista';
+  i.parentElement.insertAdjacentHTML('afterend',`<datalist id="cat-list">${catSorted().map(c=>`<option value="${esc(c.name)}"></option>`).join('')}</datalist><p class="foot" id="md-cat-h" style="text-align:left;margin:-4px 0 0">Elegí uno de tus medicamentos frecuentes o escribí uno nuevo: se agrega solo a la lista.</p>`)};
+document.addEventListener('input',e=>{if(e.target.id==='md-name'&&SH&&SH.k==='med'&&!SH.m){const c=catByName(e.target.value);if(c){const u=document.getElementById('md-unit'),q=document.getElementById('md-qty');if(u)u.value=c.unit;if(q)q.value=c.qty;const h=document.getElementById('md-cat-h');if(h)h.textContent='De tu lista: dosis y unidad cargadas, podés cambiarlas.'}}});
+const _saveMed2=ACT.saveMed;
+ACT.saveMed=function(...a){const n=val('md-name'),q=parseFloat(val('md-qty')),u=val('md-unit'),nuevo=n&&!catHas(n);_saveMed2(...a);
+  const err=document.getElementById('md-err');if(nuevo&&(!err||err.hidden)&&catAdd(n,q,u))toast('Guardado. "'+n+'" se agregó a medicamentos frecuentes')};
+
+/* ajustes: ver y editar el listado */
+const _vCfg2=vCfg;
+vCfg=function(){return _vCfg2().replace('<section class="sec"><h2>Alertas de síntomas</h2>',`<section class="sec"><h2>Medicamentos frecuentes</h2><p class="foot" style="text-align:left;margin:0">${S.cat.length} medicamentos en la lista. Aparecen al cargar un remedio o una medición, y los nuevos se suman solos.</p><button class="btn ghost" data-act="catList">Ver y editar la lista</button></section><section class="sec"><h2>Alertas de síntomas</h2>`)};
+function shCatList(){SH={k:'catl'};
+  sheet('Medicamentos frecuentes',`<div class="list" style="box-shadow:none;border:1px solid var(--line)">${catSorted().map(c=>`<button class="row" data-act="catEdit" data-id="${c.id}"><span class="body"><span class="t1">${esc(c.name)}</span><span class="t2"><span>${c.qty} ${c.unit}</span></span></span></button>`).join('')}</div>
+  <button class="btn" data-act="catNew">Agregar a la lista</button>`)}
+function shCat(c){SH={k:'cat',c,del:false};
+  sheet(c?'Editar medicamento de la lista':'Nuevo en la lista',`<label class="f"><span>Nombre</span><input id="ca-name" value="${esc(c?c.name:'')}" placeholder="Ej.: Paracetamol"></label>
+  <div class="g2"><label class="f"><span>Dosis habitual</span><input id="ca-qty" type="number" min="0" step="0.5" inputmode="decimal" value="${c?c.qty:1}"></label><label class="f"><span>Unidad</span><select id="ca-unit">${UNI.map(u=>`<option value="${u}" ${c&&c.unit===u?'selected':''}>${u==='ml'?'Mililitros (ml)':u==='mg'?'Miligramos (mg)':cap(u)}</option>`).join('')}</select></label></div>
+  <p class="foot" style="text-align:left;margin:0">La dosis es solo una sugerencia para cargar más rápido: confirmala siempre con el médico o el prospecto.</p>
+  <div class="err" id="ca-err" hidden></div><button class="btn" data-act="catSave">Guardar</button>${c?'<button class="btn danger" data-act="catDel">Quitar de la lista</button>':''}<button class="btn ghost" data-act="catList">Volver a la lista</button>`)}
+Object.assign(ACT,{
+  catList(){shCatList()},catNew(){shCat(null)},catEdit(d){shCat(S.cat.find(x=>x.id===d.id))},
+  catSave(){const name=val('ca-name'),qty=parseFloat(val('ca-qty'))||1,unit=val('ca-unit'),c=SH.c;
+    if(!name)return fail('ca-err','Escribí el nombre.');
+    if(S.cat.some(x=>x!==c&&nk(x.name)===nk(name)))return fail('ca-err','Ese medicamento ya está en la lista.');
+    if(c)Object.assign(c,{name,qty,unit});else S.cat.push({id:uid(),name,qty,unit});
+    save();shCatList();toast('Lista actualizada')},
+  catDel(_,b){if(!SH.del){SH.del=true;b.textContent='Tocá de nuevo para confirmar';return}S.cat=S.cat.filter(x=>x!==SH.c);save();shCatList();toast('Quitado de la lista (los remedios ya cargados no cambian)')}
+});
+
+/* mediciones: "Se le dio" con la lista, y nombre propio si es otro */
+const _shMd2=shMd;
+shMd=function(e,x){_shMd2(e,x);const sel=document.getElementById('md-med');if(!sel)return;
+  const v=x&&x.med,act=S.meds.filter(m=>m.who===e.who&&active(m)),names=new Set(act.map(m=>nk(m.name)));
+  const cur=v?(v.id||(catByName(v.name)?'c:'+catByName(v.name).id:'otro')):'';
+  sel.innerHTML=`<option value="">Nada</option>${act.length?`<optgroup label="Sus medicamentos en curso">${act.map(m=>`<option value="${m.id}" ${cur===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="Medicamentos frecuentes">${catSorted().filter(c=>!names.has(nk(c.name))).map(c=>`<option value="c:${c.id}" ${cur==='c:'+c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</optgroup><option value="otro" ${cur==='otro'?'selected':''}>Otro (escribir nombre)</option>`;
+  const d=document.getElementById('md-dose');if(d){d.parentElement.querySelector('span').textContent='Dosis';d.value=v?v.dose:'';d.placeholder='Ej.: 3 ml'}
+  sel.parentElement.parentElement.insertAdjacentHTML('afterend',`<label class="f" id="md-on-w" ${cur==='otro'?'':'hidden'}><span>Nombre del medicamento</span><input id="md-oname" value="${esc(cur==='otro'&&v?v.name:'')}" placeholder="Ej.: Ibuprofeno"></label>`);
+  const h=sel.parentElement.parentElement.parentElement.querySelector('.foot');if(h)h.textContent='Si elegís uno de sus medicamentos en curso, la dosis queda registrada también en Remedios y descuenta del stock. Un nombre nuevo se agrega solo a la lista de frecuentes.'};
+document.addEventListener('change',e=>{if(e.target.id==='md-med'&&SH&&SH.k==='md'){const v=e.target.value,w=document.getElementById('md-on-w');if(w)w.hidden=v!=='otro';
+  if(v.startsWith('c:')){const c=S.cat.find(x=>'c:'+x.id===v);if(c)$('#md-dose').value=c.qty+' '+c.unit}}});
+
 render();
 /* ---------- cuenta y sincronización ---------- */
 function gate(st,e){
@@ -876,6 +1120,7 @@ async function ready(){
     if(!meta.exists){const s=seed();S.people=s.people;S.vax=s.vax;S.sug=sugSeed();await ref.set({v:2,at:Date.now(),by:USER.email})}
     else if(!((meta.data()||{}).v>=2)){if(!S.sug.length)S.sug=sugSeed().filter(g=>S.people.some(p=>p.id===g.who));const e=S.people.find(p=>p.id==='euge');if(e&&e.ciclo==null)e.ciclo=true;await ref.set({v:2,at:Date.now(),by:USER.email})}
   }catch(e){READY=false;gate('err',e);return}
+  if(!S.cat.length){CAT0.forEach(([name,unit])=>S.cat.push({id:uid(),name,qty:1,unit}));S.meds.forEach(m=>catAdd(m.name,m.qty,m.unit));save()}
   const p=S.people.find(p=>p.email===USER.email);if(p)S.me=p.id;
   gate('in');render();
 }
@@ -905,6 +1150,23 @@ function shrink(file){
     im.onload=()=>{try{const k=Math.min(1,1800/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?res({blob:b,ext:'.jpg'}):raw()},'image/jpeg',.78)}catch(e){raw()}};
     im.onerror=raw;im.src=u});
 }
+const _mdSaveW=ACT.mdSave;
+ACT.mdSave=async(d,b)=>{
+  const pend=(SH.photos||[]).filter(f=>f._f);if(!pend.length)return _mdSaveW(d,b);
+  const lbl=b.textContent;b.disabled=true;b.textContent='Subiendo fotos a Google Drive…';$('#md-err').hidden=true;
+  try{
+    const tok=await gtoken('https://www.googleapis.com/auth/drive'),folder=await personFolder(tok,SH.e.who),dt=new Date(),
+      base=String(dt.getFullYear()).slice(2)+String(dt.getMonth()+1).padStart(2,'0')+' - '+cap(SH.e.title).replace(/[\\/:*?"<>|]/g,' ').trim()+' '+hm(dt).replace(':','.');
+    for(const f of pend){
+      const {blob,ext}=await shrink(f._f),i=SH.photos.indexOf(f),name=base+(SH.photos.length>1?' '+(i+1):'')+ext;
+      const form=new FormData();form.append('metadata',new Blob([JSON.stringify({name,parents:[folder]})],{type:'application/json'}));form.append('file',blob);
+      const r=await gapi(tok,'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink&supportsAllDrives=true',{method:'POST',body:form});
+      f.name=name;f.id=r.id;f.url=r.webViewLink||('https://drive.google.com/file/d/'+r.id+'/view');delete f._f;
+    }
+    b.disabled=false;b.textContent=lbl;_mdSaveW(d,b);
+  }catch(e){b.disabled=false;b.textContent=lbl;const raw=String((e&&(e.code||e.message))||'error');
+    fail('md-err',(/popup-closed|cancelled-popup/.test(raw)?'Se cerró la ventana de Google antes de terminar. Tocá Guardar de nuevo.':'No se pudo subir la foto a Drive.')+' Detalle: '+raw)}
+};
 const _saveHis=ACT.saveHis;
 ACT.saveHis=async(d,b)=>{
   const pend=SH.files.filter(f=>f._f);if(!pend.length)return _saveHis(d,b);
