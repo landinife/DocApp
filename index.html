@@ -68,6 +68,7 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 .sum{background:var(--surface);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
 .sum .big{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1.1}
 .sum .sub{color:var(--muted);font-size:13.5px}
+.daynav{display:flex;align-items:center;gap:8px;margin:-4px -6px 0}.daynav .label{flex:1;text-align:center}.daynav .btn{min-width:40px;font-size:20px;line-height:1;padding:4px 10px}
 .bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--brand);border-radius:99px}
 .list{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
@@ -176,7 +177,7 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 .sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink)}
 @media (max-width:360px){.pair,.g2{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
-.tchart{flex:none;aspect-ratio:320/150;width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.tpt{cursor:pointer}.tchart{flex:none;aspect-ratio:320/178;width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px}
 .res{white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5;background:var(--surface-2);border-radius:12px;padding:12px 14px;margin:0}
 .sum.ep{border:1.5px solid var(--warn)}
 .pill.cold{background:color-mix(in srgb,var(--p-blue) 16%,transparent);color:var(--p-blue)}
@@ -342,6 +343,12 @@ function pending(m,from,to){
   return out;
 }
 const active=m=>!m.end||m.end>=Date.now()-D;
+/* intervalo mínimo permitido (horas): si no se cargó, es el mismo que el ideal */
+const minH=m=>m.minEvery>0&&m.minEvery<m.every?m.minEvery:m.every;
+const fqh=(h,eu)=>{const n=eu==='w'?h/168:eu==='d'?h/24:h;return +n.toFixed(2)+' '+(eu==='w'?(n===1?'semana':'semanas'):eu==='d'?(n===1?'día':'días'):'h')};
+const lastGiven=m=>{const l=m.logs.filter(x=>!x.skip&&x.t).sort((a,b)=>b.t-a.t)[0];return l?l.t:null};
+/* desde cuándo se puede adelantar la toma programada en s (null si no aplica) */
+const earlyFrom=(m,s)=>{if(!(m.minEvery>0&&m.minEvery<m.every))return null;const l=lastGiven(m);if(!l||l>=s)return null;const e=l+m.minEvery*H;return e<s?e:null};
 function todayItems(){
   const now=Date.now(),a=sod(now),b=a+D-1,items=[];
   S.meds.filter(m=>m.mode==='sched'&&show(m)).forEach(m=>{
@@ -411,32 +418,61 @@ function chrome(){
 }
 function doseRow(i){
   const {m,s,l,st}=i, t=l&&l.t;
-  const extra=st==='done'?`Dada ${hm(t)} · marcó ${esc(P(l.by).name)}`:st==='skip'?`No se dio · marcó ${esc(P(l.by).name)}`:st==='late'?(sod(s)<sod(Date.now())?'Atrasada, de '+(dayName(s)==='Ayer'?'ayer':'el '+dayName(s)):'Atrasada'):FOOD[m.food];
-  return `<button class="row ${st}" data-act="${l?'log':'take'}" data-m="${m.id}" data-s="${s}">
+  const extra=st==='done'?`Dada ${hm(t)} · marcó ${esc(P(l.by).name)}`:st==='skip'?`No se dio · marcó ${esc(P(l.by).name)}`:st==='late'?(sod(s)<sod(Date.now())?'Atrasada, de '+(dayName(s)==='Ayer'?'ayer':'el '+dayName(s)):'Atrasada'):st==='miss'?'No se marcó':FOOD[m.food];
+  const ef=st==='next'?earlyFrom(m,s):null;
+  return `<button class="row ${st==='miss'?'late':st==='plan'?'next':st}" ${st==='plan'?'':`data-act="${l?'log':'take'}"`} data-m="${m.id}" data-s="${s}">
     <span class="time">${hm(s)}</span>${mic(m)}
     <span class="body"><span class="t1">${esc(m.name)} · ${dose(m)} ${m.demo?'<span class="tag">ejemplo</span>':''}</span>
-    <span class="t2">${who(m.who)}${extra?`<span>${extra}</span>`:''}</span></span>
+    <span class="t2">${who(m.who)}${extra?`<span>${extra}</span>`:''}</span>${ef?`<span class="t2"><span class="pill load">${ef<=Date.now()?'Ya se puede adelantar (desde las '+hm(ef)+')':'Se puede adelantar a las '+hm(ef)}</span></span>`:''}</span>
     <span class="tick">${ic(st==='skip'?'minus':'check')}</span></button>`;
 }
+let DAYOFF=0;
+function dayItems(off){
+  const now=Date.now(),a=sod(now)+off*D,b=a+D-1,items=[];
+  S.meds.filter(m=>m.mode==='sched'&&show(m)).forEach(m=>{
+    pending(m,a,b).forEach(s=>items.push({m,s,st:s<now?'miss':'plan'}));
+    m.logs.forEach(l=>{const t=l.t||l.s;if(t>=a&&t<=b)items.push({m,s:l.s,l,st:l.skip?'skip':'done'})});
+  });
+  return items.sort((x,y)=>x.s-y.s);
+}
+const dayLabel=off=>{const t=sod(Date.now())+off*D+12*H,n=new Date(t).toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});return (off===-1?'Ayer, ':off===1?'Mañana, ':'')+n};
+const dayNav=off=>`<div class="daynav"><button class="btn sm ghost" data-act="dayGo" data-n="-1" aria-label="Día anterior">‹</button><span class="label">${esc(off===0?LONG():dayLabel(off))}</span><button class="btn sm ghost" data-act="dayGo" data-n="1" aria-label="Día siguiente">›</button></div>`;
+function vDia(off){
+  const it=dayItems(off),done=it.filter(i=>i.st==='done'),skip=it.filter(i=>i.st==='skip'),miss=it.filter(i=>i.st==='miss'),plan=it.filter(i=>i.st==='plan');
+  const a=sod(Date.now())+off*D,b=a+D-1,past=off<0;
+  const prnLogs=[];S.meds.filter(m=>m.mode==='prn'&&show(m)).forEach(m=>m.logs.forEach(l=>{if(!l.skip&&l.t>=a&&l.t<=b)prnLogs.push({m,l})}));
+  prnLogs.sort((x,y)=>x.l.t-y.l.t);
+  const total=it.length,pct=total?Math.round(done.length/total*100):0;
+  let h=`<div class="sum">${dayNav(off)}<div><div class="big">${total?(past||off===0?`${done.length} de ${total} tomas`:`${total} toma${total>1?'s':''} programada${total>1?'s':''}`):'Sin tomas ese día'}</div>
+    <div class="sub">${past?[miss.length?`${miss.length} sin marcar`:'',skip.length?`${skip.length} salteada${skip.length>1?'s':''}`:'',prnLogs.length?`${prnLogs.length} dosis "si hace falta"`:''].filter(Boolean).join(' · ')||(total?'Todas las tomas se marcaron.':''):'Es una previsión con los horarios actuales: puede cambiar si se recalcula alguna toma.'}</div></div>
+    ${past?`<div class="bar" role="img" aria-label="${pct}% de las tomas hechas"><i style="width:${pct}%"></i></div>`:''}
+    <button class="btn ghost" data-act="dayGo" data-n="0">Volver a hoy</button></div>`;
+  const sec=(t,arr)=>arr.length?`<section class="sec"><div class="sec-h"><span class="label">${t}</span><span class="count">${arr.length}</span></div><div class="list">${arr.map(doseRow).join('')}</div></section>`:'';
+  h+=past?sec('Sin marcar',miss)+sec('Dadas',done)+sec('Salteadas',skip):sec('Programadas',plan);
+  if(prnLogs.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Si hace falta: dosis dadas</span><span class="count">${prnLogs.length}</span></div><div class="list">${prnLogs.map(({m,l})=>`<button class="row done" data-act="log" data-m="${m.id}" data-s="${l.s}"><span class="time">${hm(l.t)}</span>${mic(m)}<span class="body"><span class="t1">${esc(m.name)} · ${dose(m)}</span><span class="t2">${who(m.who)}<span>marcó ${esc(P(l.by).name)}</span></span></span><span class="tick">${ic('check')}</span></button>`).join('')}</div></section>`;
+  if(!total&&!prnLogs.length)h+=`<div class="empty">No hay tomas registradas ni programadas para ese día.</div>`;
+  return h;
+}
 function vHoy(){
+  if(DAYOFF)return vDia(DAYOFF);
   const it=todayItems(), done=it.filter(i=>i.st==='done'||i.st==='skip'), late=it.filter(i=>i.st==='late'), next=it.filter(i=>i.st==='next');
   const total=it.length, pct=total?Math.round(done.length/total*100):0;
   const prn=S.meds.filter(m=>m.mode==='prn'&&show(m));
   const low=S.meds.filter(m=>show(m)&&active(m)&&m.stock!=null&&m.stock<=m.stockMin);
   const nv=nextVax(), nt=nextTurno();
   let h=S.demo?`<div class="note info"><span>Estos datos son de ejemplo para que veas cómo funciona.</span><button data-act="clearDemo">Borrar ejemplos</button></div>`:'';
-  h+=`<div class="sum"><div><div class="label">${esc(LONG())}</div><div class="big">${total?`${done.length} de ${total} tomas`:'Sin tomas hoy'}</div>
-    <div class="sub">${late.length?`${late.length} atrasada${late.length>1?'s':''}. `:''}${next[0]?`Próxima a las ${hm(next[0].s)}: ${esc(next[0].m.name)} para ${esc(P(next[0].m.who).name)}.`:total?'No quedan tomas programadas para hoy.':'Agregá un medicamento con el botón +.'}</div></div>
+  h+=`<div class="sum">${dayNav(0)}<div><div class="big">${total?`${done.length} de ${total} tomas`:'Sin tomas hoy'}</div>
+    <div class="sub">${late.length?`${late.length} atrasada${late.length>1?'s':''}. `:''}${next[0]?`Próxima a las ${hm(next[0].s)}: ${esc(next[0].m.name)} para ${esc(P(next[0].m.who).name)}.${earlyFrom(next[0].m,next[0].s)?' Se puede adelantar a las '+hm(earlyFrom(next[0].m,next[0].s))+'.':''}`:total?'No quedan tomas programadas para hoy.':'Agregá un medicamento con el botón +.'}</div></div>
     <div class="bar" role="img" aria-label="${pct}% de las tomas de hoy hechas"><i style="width:${pct}%"></i></div></div>`;
   S.sug.filter(g=>show(g)&&!sugTurno(g)&&sugDue(g)&&daysTo(sugDue(g))<=30).sort((a,b)=>sugDue(a)<sugDue(b)?-1:1).slice(0,3).forEach(g=>h+=`<div class="note info"><span>${daysTo(sugDue(g))<0?'Tocaba':'Toca'} ${esc(g.what.toLowerCase())} de ${esc(P(g.who).name)}: ${fd(sugDue(g))}.</span><button data-act="sugTur" data-id="${g.id}">Agendar</button></div>`);
   low.forEach(m=>h+=`<div class="note"><span>Quedan ${m.stock} dosis de ${esc(m.name)} (${esc(P(m.who).name)}). Conviene comprar.</span></div>`);
   const sec=(t,arr)=>arr.length?`<section class="sec"><div class="sec-h"><span class="label">${t}</span><span class="count">${arr.length}</span></div><div class="list">${arr.map(doseRow).join('')}</div></section>`:'';
   h+=sec('Atrasadas',late)+sec('Próximas',next);
   if(prn.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Si hace falta</span></div><div class="list">${prn.map(m=>{
-    const last=m.logs.filter(l=>!l.skip).sort((a,b)=>b.t-a.t)[0], ok=!last||Date.now()>=last.t+m.every*H;
+    const last=m.logs.filter(l=>!l.skip).sort((a,b)=>b.t-a.t)[0], now=Date.now(), ok=!last||now>=last.t+m.every*H, early=last&&!ok&&now>=last.t+minH(m)*H;
     return `<div class="row">${mic(m)}<span class="body"><span class="t1">${esc(m.name)} · ${dose(m)} ${m.demo?'<span class="tag">ejemplo</span>':''}</span>
       <span class="t2">${who(m.who)}<span>${last?`Última: ${dayName(last.t).toLowerCase()} ${hm(last.t)}`:'Sin dosis registradas'}</span>
-      ${last?`<span class="pill ${ok?'ok':'soon'}">${ok?'Se puede dar':'Esperar hasta '+whenTxt(last.t+m.every*H)}</span>`:''}</span></span>
+      ${last?`<span class="pill ${ok?'ok':early?'load':'soon'}">${ok?'Se puede dar':early?'Ya se puede · ideal '+whenTxt(last.t+m.every*H):'Esperar hasta '+whenTxt(last.t+minH(m)*H)}</span>`:''}</span></span>
       <button class="btn sm ghost" data-act="prn" data-m="${m.id}">Registrar</button></div>`}).join('')}</div></section>`;
   h+=sec('Hechas',done);
   h+=`<section class="sec"><div class="sec-h"><span class="label">Lo que viene</span></div><div class="pair">
@@ -450,7 +486,7 @@ function vMeds(){
     const ms=S.meds.filter(show), act=ms.filter(active), fin=ms.filter(m=>!active(m));
     const card=m=>{const nx=m.mode==='sched'?pending(m,Date.now()-back(m),Date.now()+Math.max(3*D,m.every*H*((m.off||0)+1)+D))[0]:null;
       return `<button class="row" data-act="editMed" data-m="${m.id}">${mic(m)}<span class="body"><span class="t1">${esc(m.name)} ${m.demo?'<span class="tag">ejemplo</span>':''}</span>
-      <span class="t2">${who(m.who)}<span>${dose(m)} ${m.mode==='prn'?`si hace falta, mínimo cada ${fq(m)}`:`cada ${fq(m)}`}</span><span>${FOOD[m.food]}</span></span>
+      <span class="t2">${who(m.who)}<span>${dose(m)} ${m.mode==='prn'?`si hace falta, cada ${fq(m)}`:`cada ${fq(m)}`}${minH(m)<m.every?` (se puede adelantar a ${fqh(minH(m),m.eu||'h')})`:m.mode==='prn'?' como mínimo':''}</span><span>${FOOD[m.food]}</span></span>
       <span class="t2"><span class="pill">${m.mode==='prn'?'A demanda':m.end?'Hasta '+fd(iso(m.end)):'Permanente'}</span>${m.mode==='sched'&&m.off>0?`<span class="pill">${m.on} sí, ${m.off} de descanso</span>`:''}${nx?`<span class="pill load">Próxima ${dayName(nx).toLowerCase()} ${hm(nx)}</span>`:''}${m.stock!=null?`<span class="pill ${m.stock<=m.stockMin?'late':''}">Quedan ${m.stock}</span>`:''}</span></span></button>`};
     h+=`<section class="sec"><div class="sec-h"><span class="label">En curso</span><span class="count">${act.length}</span></div><div class="list">${act.map(card).join('')||'<div class="empty">No hay medicamentos cargados. Tocá + para agregar el primero.</div>'}</div></section>`;
     if(fin.length)h+=`<section class="sec"><div class="sec-h"><span class="label">Terminados</span><span class="count">${fin.length}</span></div><div class="list">${fin.map(card).join('')}</div></section>`;
@@ -586,6 +622,7 @@ function shTake(){
     <div class="stack"><span class="label">¿A qué hora se dio?</span>
       <div class="seg"><button data-when="now" aria-pressed="${when==='now'}">Ahora ${hm(now)}</button><button data-when="sched" aria-pressed="${when==='sched'}">A horario ${hm(s)}</button><button data-when="custom" aria-pressed="${when==='custom'}">Otra hora</button></div>
       ${when==='custom'?`<label class="f"><span>Hora real</span><input type="time" id="tk-time" value="${hm(custom)}"></label>`:''}</div>
+    ${(()=>{const ef=earlyFrom(m,s);if(!ef||t>=s)return'';return t<ef?`<div class="note"><span>Todavía no pasó el mínimo de ${fqh(minH(m),m.eu||'h')} desde la última toma (${whenTxt(lastGiven(m))}). Se puede adelantar desde las ${hm(ef)}.</span></div>`:`<div class="note info"><span>Se adelanta a la hora ideal (${hm(s)}): ya pasó el mínimo de ${fqh(minH(m),m.eu||'h')} desde la última toma.</span></div>`})()}
     ${last?'<div class="note info"><span>Es la última toma del tratamiento.</span></div>':`<div class="stack"><span class="label">¿Qué hacemos con la próxima toma?</span>
       <button class="opt" data-mode="recalc" aria-pressed="${mode==='recalc'}"><span class="dot"></span><span><b>Recalcular desde la hora real</b><small>Próxima: ${dayName(nextSlot(m,t+step)).toLowerCase()} ${hm(nextSlot(m,t+step))}, y las siguientes cada ${fq(m)} desde ahí.</small></span></button>
       <button class="opt" data-mode="keep" aria-pressed="${mode==='keep'}"><span class="dot"></span><span><b>Mantener el horario original</b><small>Próxima: ${dayName(nextSlot(m,s+step)).toLowerCase()} ${hm(nextSlot(m,s+step))}, como estaba programada.</small></span></button></div>`}
@@ -597,9 +634,10 @@ function shLog(m,l){
   <button class="btn danger" data-act="undoLog">Deshacer esta marca</button>`);
 }
 function shPrn(){
-  const m=SH.m,last=m.logs.filter(l=>!l.skip).sort((a,b)=>b.t-a.t)[0],early=last&&Date.now()<last.t+m.every*H;
-  sheet('Registrar dosis',`<dl class="kv"><dt>Medicamento</dt><dd>${esc(m.name)} · ${dose(m)}</dd><dt>Para</dt><dd>${esc(P(m.who).name)}</dd><dt>Última dosis</dt><dd>${last?fdt(last.t):'Ninguna'}</dd><dt>Intervalo mínimo</dt><dd>${fq(m)}</dd>${m.notes?`<dt>Indicaciones</dt><dd>${esc(m.notes)}</dd>`:''}</dl>
-  ${early?`<div class="note"><span>Todavía no pasó el intervalo mínimo (${fq(m)}) desde la última dosis. Se puede repetir ${whenTxt(last.t+m.every*H)}.</span></div><button class="btn danger" data-act="okPrn">Registrar igual, ahora ${hm(Date.now())}</button>`:`<button class="btn" data-act="okPrn">Registrar dosis ahora, ${hm(Date.now())}</button>`}`);
+  const m=SH.m,last=m.logs.filter(l=>!l.skip).sort((a,b)=>b.t-a.t)[0],now=Date.now(),early=last&&now<last.t+minH(m)*H,adel=last&&!early&&now<last.t+m.every*H;
+  sheet('Registrar dosis',`<dl class="kv"><dt>Medicamento</dt><dd>${esc(m.name)} · ${dose(m)}</dd><dt>Para</dt><dd>${esc(P(m.who).name)}</dd><dt>Última dosis</dt><dd>${last?fdt(last.t):'Ninguna'}</dd>${minH(m)<m.every?`<dt>Intervalo ideal</dt><dd>${fq(m)}</dd><dt>Mínimo</dt><dd>${fqh(minH(m),m.eu||'h')}</dd>`:`<dt>Intervalo mínimo</dt><dd>${fq(m)}</dd>`}${m.notes?`<dt>Indicaciones</dt><dd>${esc(m.notes)}</dd>`:''}</dl>
+  ${adel?`<div class="note info"><span>Ya pasó el mínimo (${fqh(minH(m),m.eu||'h')}). Lo ideal es esperar hasta ${whenTxt(last.t+m.every*H)}, pero se puede dar ahora si hace falta.</span></div>`:''}
+  ${early?`<div class="note"><span>Todavía no pasó el intervalo mínimo (${fqh(minH(m),m.eu||'h')}) desde la última dosis. Se puede repetir ${whenTxt(last.t+minH(m)*H)}.</span></div><button class="btn danger" data-act="okPrn">Registrar igual, ahora ${hm(Date.now())}</button>`:`<button class="btn" data-act="okPrn">Registrar dosis ahora, ${hm(Date.now())}</button>`}`);
 }
 function shMed(m,pre){
   const e=m||Object.assign({name:'',who:defWho(),qty:1,unit:'comprimido',mode:'sched',every:8,first:Date.now(),end:null,food:'',notes:'',stock:null,stockMin:3},pre||{});
@@ -613,8 +651,10 @@ function shMed(m,pre){
     <div class="g2"><label class="f"><span>Dosis</span><input id="md-qty" type="number" min="0" step="0.5" inputmode="decimal" value="${e.qty}"></label>
     <label class="f"><span>Unidad</span><select id="md-unit">${['comprimido','ml','gotas','cápsula','parche','puff','sobre','aplicación','mg'].map(u=>`<option value="${u}" ${u===e.unit?'selected':''}>${u==='ml'?'Mililitros (ml)':u==='mg'?'Miligramos (mg)':cap(u)}</option>`).join('')}</select></label></div>
     <div class="stack"><span class="label">Cómo se toma</span><div class="seg" id="md-modes"><button data-mdmode="sched" aria-pressed="${e.mode==='sched'}">Con horario</button><button data-mdmode="prn" aria-pressed="${e.mode==='prn'}">Si hace falta</button></div></div>
-    <div class="g2"><label class="f"><span id="md-every-l">${e.mode==='prn'?'Intervalo mínimo':'Cada cuánto'}</span><input id="md-every" type="number" min="1" inputmode="numeric" value="${eu==='w'?e.every/168:eu==='d'?e.every/24:e.every}"></label>
+    <div class="g2"><label class="f"><span id="md-every-l">${e.mode==='prn'?'Cada cuánto (ideal)':'Cada cuánto'}</span><input id="md-every" type="number" min="1" inputmode="numeric" value="${eu==='w'?e.every/168:eu==='d'?e.every/24:e.every}"></label>
     <label class="f"><span>Unidad de tiempo</span><select id="md-eu"><option value="h" ${eu==='h'?'selected':''}>Horas</option><option value="d" ${eu==='d'?'selected':''}>Días</option><option value="w" ${eu==='w'?'selected':''}>Semanas</option></select></label></div>
+    <label class="f"><span>Se puede adelantar hasta cada (opcional)</span><input id="md-minev" type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="Ej.: 6" value="${e.minEvery>0?(eu==='w'?e.minEvery/168:eu==='d'?e.minEvery/24:e.minEvery):''}"></label>
+    <p class="foot" style="text-align:left;margin:-6px 0 0">Para los que tienen dos rangos. Ejemplo: ibuprofeno lo ideal cada 8 h, pero si hace falta se puede a las 6 h: poné 8 arriba y 6 acá (misma unidad de tiempo).</p>
     <div id="md-sched" ${e.mode==='prn'?'hidden':''} class="stack">
       <div class="g2"><label class="f"><span>Primera dosis: día</span><input id="md-date" type="date" value="${iso(f)}"></label><label class="f"><span>Hora</span><input id="md-time" type="time" value="${hm(f)}"></label></div>
       <span class="label">Duración</span><div class="seg"><button data-mddur="perm" aria-pressed="${!e.end}">Permanente</button><button data-mddur="fin" aria-pressed="${!!e.end}">Con duración</button></div>
@@ -736,6 +776,7 @@ const ACT={
   log(d){const m=S.meds.find(x=>x.id===d.m),l=m.logs.find(x=>x.s===+d.s);SH={k:'log',m,l};shLog(m,l)},
   undoLog(){const {m,l}=SH;m.logs=m.logs.filter(x=>x!==l);if(l.pb!=null)m.base=l.pb;if(!l.skip&&m.stock!=null)m.stock++;closeSheet();render();toast('Marca deshecha')},
   prn(d){SH={k:'prn',m:S.meds.find(x=>x.id===d.m)};shPrn()},
+  dayGo(d){const n=+d.n;DAYOFF=n===0?0:DAYOFF+n;render();window.scrollTo(0,0)},
   okPrn(){const m=SH.m,t=Date.now();m.logs.push({s:t,t,by:S.me});if(m.stock!=null)m.stock=Math.max(0,m.stock-1);closeSheet();render();toast('Dosis registrada')},
   editMed(d){shMed(S.meds.find(x=>x.id===d.m))},
   saveMed(){
@@ -744,12 +785,14 @@ const ACT={
     if(!name)return fail('md-err','Escribí el nombre del medicamento.');
     if(!(qty>0))return fail('md-err','La dosis tiene que ser mayor a cero.');
     if(!(nEv>=1))return fail('md-err','Indicá cada cuánto se toma (mínimo 1).');
+    const mr=val('md-minev').replace(',','.'),mEv=mr===''?0:parseFloat(mr)*(eu==='w'?168:eu==='d'?24:1);
+    if(mr!==''&&!(mEv>0&&mEv<every))return fail('md-err','El mínimo para adelantar tiene que ser menor que "Cada cuánto".');
     let first=0,end=null;
     if(mode==='sched'){ if(!val('md-date')||!val('md-time'))return fail('md-err','Cargá el día y la hora de la primera dosis.');
       const[h,mi]=val('md-time').split(':').map(Number);first=pd(val('md-date'))+h*H+mi*6e4;
       if(SH.dur==='fin'){const dd=parseInt(val('md-days'));if(!(dd>=1))return fail('md-err','Indicá cuántos días dura el tratamiento.');end=first+dd*D;}
       if(SH.cyc){on=parseInt(val('md-on'));off=parseInt(val('md-off'));if(!(on>=1&&off>=1))return fail('md-err','Indicá cuántas tomas seguidas y cuántas de descanso (mínimo 1).');} }
-    const st=val('md-stock'),o={name,who:val('md-who'),qty,unit:val('md-unit'),mode,every,eu,on,off,first,end,food:val('md-food'),notes:val('md-notes'),stock:st===''?null:Math.max(0,parseInt(st)||0),stockMin:parseInt(val('md-min'))||0};
+    const st=val('md-stock'),o={name,who:val('md-who'),qty,unit:val('md-unit'),mode,every,minEvery:mEv,eu,on,off,first,end,food:val('md-food'),notes:val('md-notes'),stock:st===''?null:Math.max(0,parseInt(st)||0),stockMin:parseInt(val('md-min'))||0};
     if(SH.m){const m=SH.m,re=m.first!==first||m.every!==every||m.mode!==mode||(m.on||0)!==on||(m.off||0)!==off;Object.assign(m,o);if(re){m.base=first;m.cyc0=first}delete m.demo;}
     else S.meds.push(Object.assign({id:uid(),base:first,cyc0:first,logs:[]},o));
     closeSheet();render();toast('Medicamento guardado')},
@@ -840,7 +883,7 @@ document.addEventListener('click',e=>{
   else if(d.cs||d.cm){const k=d.cs?'sym':'mood',t=d.cs||d.cm,i=SH[k].indexOf(t);i>=0?SH[k].splice(i,1):SH[k].push(t);b.setAttribute('aria-pressed',i<0)}
   else if(d.when){if(d.when==='custom'&&SH.when!=='custom')SH.custom=Date.now();SH.when=d.when;shTake()}
   else if(d.mode){SH.mode=d.mode;shTake()}
-  else if(d.mdmode){SH.mode=d.mdmode;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-sched').hidden=SH.mode==='prn';$('#md-every-l').textContent=SH.mode==='prn'?'Intervalo mínimo':'Cada cuánto'}
+  else if(d.mdmode){SH.mode=d.mdmode;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-sched').hidden=SH.mode==='prn';$('#md-every-l').textContent=SH.mode==='prn'?'Cada cuánto (ideal)':'Cada cuánto'}
   else if(d.mdcyc){SH.cyc=d.mdcyc==='si';b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-cyc-w').hidden=!SH.cyc}
   else if(d.mddur){SH.dur=d.mddur;b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#md-days-w').hidden=SH.dur!=='fin'}
   else if(d.act&&ACT[d.act])ACT[d.act](d,b);
@@ -851,6 +894,9 @@ document.addEventListener('input',e=>{if(e.target.id==='his-q'){S.hisQ=e.target.
 document.addEventListener('change',e=>{if(e.target.id==='hs-files'&&SH&&SH.k==='his'){[...e.target.files].forEach(f=>SH.files.push({name:f.name,size:f.size,_f:f}));e.target.value='';$('#hs-flist').innerHTML=fileList()}});
 document.addEventListener('change',e=>{if(e.target.id==='sg-age'){$('#sg-ev-w').hidden=e.target.checked;$('#sg-age-t').hidden=!e.target.checked}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+document.addEventListener('click',e=>{const p=e.target.closest('.tpt');if(!p)return;const t=+p.dataset.pt,i=p.closest('svg').nextElementSibling;
+  p.closest('svg').querySelectorAll('.tpt').forEach(c=>c.setAttribute('stroke','none'));p.setAttribute('stroke','var(--ink)');p.setAttribute('stroke-width','1.5');
+  if(i)i.innerHTML='<b>'+cap(new Date(t).toLocaleDateString('es-AR',{weekday:'long'}))+' '+fd(iso(t)).slice(0,5)+' · '+hm(t)+' h · '+fT(p.dataset.v)+'</b>'});
 
 /* ---------- síntomas: episodios con mediciones ---------- */
 const SYMS=['Fiebre','Tos','Mocos','Dolor de garganta','Dolor de oído','Vómitos','Diarrea','Sarpullido','Dolor de panza','Dolor de cabeza','Decaimiento','No come','Irritable'];
@@ -878,7 +924,7 @@ function alertNote(e){const a=epAlerts(e);if(!a.length)return'';const p=P(e.who)
   return `<div class="note"><span><b>Conviene consultar al médico.</b> ${a.join(' ')}</span>${p.tel?`<a class="btn sm" style="text-decoration:none;background:var(--warn);color:#fff" href="tel:${esc(p.tel)}">Llamar</a>`:''}</div>`}
 function chart(e){
   const ts=epTemps(e);if(!ts.length)return'';
-  const t0=Math.min(e.start,ts[0].t),t1=Math.max(ts[ts.length-1].t,t0+6*H,e.next||0),W=320,Hh=150,L=30,R=8,T=10,B=22;
+  const t0=Math.min(e.start,ts[0].t),t1=Math.max(ts[ts.length-1].t,t0+6*H,e.next||0),W=320,Hh=178,L=30,R=14,T=10,B=40;
   const lo=Math.min(35.5,Math.floor((epMin(e)-.3)*2)/2),hi=Math.max(40.5,Math.ceil((epMax(e)+.3)*2)/2),x=t=>L+(t-t0)/(t1-t0)*(W-L-R),y=v=>T+(hi-v)/(hi-lo)*(Hh-T-B);
   const ln=(v,c,dash,lbl)=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-width="1" ${dash?'stroke-dasharray="4 4"':''}/><text x="${L-4}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${lbl}</text>`;
   const pts=ts.map(p=>x(p.t).toFixed(1)+','+y(+p.temp).toFixed(1)).join(' ');
@@ -886,8 +932,9 @@ function chart(e){
   return `<svg class="tchart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Temperatura del episodio, máxima ${fT(epMax(e))}">
     ${ln(36,'var(--p-blue)',1,'36')}${lo<S.alert.low?ln(S.alert.low,'var(--p-blue)',1,String(S.alert.low).replace('.',',')):''}${ln(37,'var(--line)',0,'37')}${ln(38,'var(--warn)',1,'38')}${S.alert.temp>38?ln(S.alert.temp,'var(--danger)',1,String(S.alert.temp).replace('.',',')):''}${ln(40,'var(--line)',0,'40')}
     <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    ${ts.map(p=>`<circle cx="${x(p.t).toFixed(1)}" cy="${y(+p.temp).toFixed(1)}" r="4" fill="${col[tK(+p.temp)]}" stroke="var(--surface)" stroke-width="1.5"/>`).join('')}
-    <text x="${L}" y="${Hh-6}" font-size="10" fill="var(--muted)">${whenTxt(t0)}</text><text x="${W-R}" y="${Hh-6}" font-size="10" fill="var(--muted)" text-anchor="end">${whenTxt(t1)}</text></svg>`;
+    ${ts.map(p=>`<circle cx="${x(p.t).toFixed(1)}" cy="${y(+p.temp).toFixed(1)}" r="4" fill="${col[tK(+p.temp)]}" stroke="var(--surface)" stroke-width="1.5"/><circle class="tpt" data-pt="${p.t}" data-v="${p.temp}" cx="${x(p.t).toFixed(1)}" cy="${y(+p.temp).toFixed(1)}" r="11" fill="transparent"><title>${fd(iso(p.t)).slice(0,5)} ${hm(p.t)} · ${fT(p.temp)}</title></circle>`).join('')}
+    ${(()=>{let lx=-99,ld='',o='';ts.forEach(p=>{const px=x(p.t),d=iso(p.t);if(px-lx<30)return;const nd=d!==ld;o+=`<line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="${Hh-B}" y2="${Hh-B+4}" stroke="var(--muted)"/><text x="${px.toFixed(1)}" y="${Hh-B+15}" text-anchor="middle" font-size="9.5" fill="var(--ink)">${hm(p.t)}</text>${nd?`<text x="${px.toFixed(1)}" y="${Hh-B+27}" text-anchor="middle" font-size="9" fill="var(--muted)">${fd(d).slice(0,5)}</text>`:''}`;lx=px;ld=d});return o})()}
+    </svg><p class="foot tc-info" style="text-align:left;margin:0">Tocá un punto para ver la fecha, la hora y la temperatura.</p>`;
 }
 function epCard(e){
   const l=epLast(e),dia=Math.floor((sod(Date.now())-sod(e.start))/D)+1;
@@ -897,7 +944,7 @@ function epCard(e){
     <div class="g2"><button class="btn" data-act="mdNew" data-id="${e.id}">Agregar medición</button><button class="btn ghost" data-act="epView" data-id="${e.id}">Ver episodio</button></div></div>`;
 }
 const _vHoy=vHoy;
-vHoy=function(){const o=epOpen();return (o.length?o.map(epCard).join(''):`<button class="btn ghost" data-act="epNew">Registrar síntomas o fiebre</button>`)+_vHoy()};
+vHoy=function(){if(DAYOFF)return _vHoy();const o=epOpen();return (o.length?o.map(epCard).join(''):`<button class="btn ghost" data-act="epNew">Registrar síntomas o fiebre</button>`)+_vHoy()};
 
 /* historia: episodios en curso arriba y los cerrados mezclados con el resto, como tipo "Síntomas" */
 function hisRow(e){
