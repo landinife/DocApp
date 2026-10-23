@@ -427,10 +427,18 @@ function doseRow(i){
     <span class="tick">${ic(st==='skip'?'minus':'check')}</span></button>`;
 }
 let DAYOFF=0;
+/* tomas sin marcar con horarios anteriores a un "recalcular": cada registro guarda en pb la base que había */
+function oldMissed(m,a,b){
+  if(m.mode!=='sched')return[];const L=m.logs.filter(l=>l.pb!=null).sort((x,y)=>x.s-y.s);if(!L.length)return[];
+  const tr=[];let cur=L[0].pb,fin=L[0].s;L.forEach(l=>{if(l.pb!==cur){tr.push([cur,fin]);cur=l.pb}fin=l.s});if(m.base!==cur)tr.push([cur,fin]);
+  const p=m.every*H,out=[];tr.forEach(([B,F])=>{for(let s=B+Math.max(0,Math.ceil((Math.max(a,B)-B)/p))*p;s<=Math.min(F,b);s+=p){if(s>=m.first&&(!m.end||s<=m.end)&&!rest(m,s)&&!m.logs.some(l=>l.s===s)&&s<m.base)out.push(s)}});
+  return [...new Set(out)].sort((x,y)=>x-y);
+}
 function dayItems(off){
   const now=Date.now(),a=sod(now)+off*D,b=a+D-1,items=[];
   S.meds.filter(m=>m.mode==='sched'&&show(m)).forEach(m=>{
     pending(m,a,b).forEach(s=>items.push({m,s,st:s<now?'miss':'plan'}));
+    oldMissed(m,a,b).forEach(s=>{if(s<now)items.push({m,s,st:'miss'})});
     m.logs.forEach(l=>{const t=l.t||l.s;if(t>=a&&t<=b)items.push({m,s:l.s,l,st:l.skip?'skip':'done'})});
   });
   return items.sort((x,y)=>x.s-y.s);
@@ -936,11 +944,12 @@ function chart(e){
     ${(()=>{let lx=-99,ld='',o='';ts.forEach(p=>{const px=x(p.t),d=iso(p.t);if(px-lx<30)return;const nd=d!==ld;o+=`<line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="${Hh-B}" y2="${Hh-B+4}" stroke="var(--muted)"/><text x="${px.toFixed(1)}" y="${Hh-B+15}" text-anchor="middle" font-size="9.5" fill="var(--ink)">${hm(p.t)}</text>${nd?`<text x="${px.toFixed(1)}" y="${Hh-B+27}" text-anchor="middle" font-size="9" fill="var(--muted)">${fd(d).slice(0,5)}</text>`:''}`;lx=px;ld=d});return o})()}
     </svg><p class="foot tc-info" style="text-align:left;margin:0">Tocá un punto para ver la fecha, la hora y la temperatura.</p>`;
 }
+const ofrecerCierre=e=>{if(e.end)return false;const ts=epTemps(e),f=ts.filter(x=>+x.temp>=38).pop();return !!f&&Date.now()-f.t>=24*H&&ts.some(x=>x.t>f.t&&+x.temp<38)};
 function epCard(e){
   const l=epLast(e),dia=Math.floor((sod(Date.now())-sod(e.start))/D)+1;
   return `<div class="sum ep"><div><div class="label">Síntomas en curso · ${esc(P(e.who).name)}</div><div class="big">${esc(e.title)} · día ${dia}</div>
     <div class="sub">${l?`Última medición ${whenTxt(l.t)}${l.temp!=null&&l.temp!==''?': <span class="pill ${tK(+l.temp)}">'+fT(l.temp)+'</span>':''}.`:'Sin mediciones todavía.'}${e.next?` Volver a medir ${e.next<Date.now()?'<b>ya</b> (tocaba '+whenTxt(e.next)+')':'a las '+whenTxt(e.next)}.`:''}</div></div>
-    ${alertNote(e)}
+    ${alertNote(e)}${ofrecerCierre(e)?`<div class="note info"><span>Lleva 24 horas sin fiebre: ¿cerrar el episodio?</span><button data-act="epCloseId" data-id="${e.id}">Cerrar</button></div>`:''}
     <div class="g2"><button class="btn" data-act="mdNew" data-id="${e.id}">Agregar medición</button><button class="btn ghost" data-act="epView" data-id="${e.id}">Ver episodio</button></div></div>`;
 }
 const _vHoy=vHoy;
@@ -1041,6 +1050,7 @@ Object.assign(ACT,{
     closeSheet();render();shEp(e);toast(x?'Medición actualizada':SH&&e.next?'Medición guardada. Aviso para volver a medir a las '+hm(e.next):'Medición guardada')},
   mdDel(_,b){if(!SH.del){SH.del=true;b.textContent='Tocá de nuevo para confirmar';return}const {e,x}=SH;e.entries=e.entries.filter(y=>y!==x);closeSheet();render();shEp(e)},
   epClose(){const e=SH.e;e.end=Math.max(Date.now(),...e.entries.map(x=>x.t));e.next=null;closeSheet();render();toast('Episodio cerrado: queda en la historia clínica')},
+  epCloseId(d){const e=S.epi.find(x=>x.id===d.id);if(!e)return;e.end=Math.max(Date.now(),...e.entries.map(x=>x.t));e.next=null;render();toast('Episodio cerrado: queda en la historia clínica')},
   epReopen(){const e=SH.e;e.end=null;closeSheet();render();shEp(e)},
   epDel(_,b){if(!SH.del){SH.del=true;b.textContent='Tocá de nuevo para confirmar';return}S.epi=S.epi.filter(y=>y!==SH.e);closeSheet();render();toast('Episodio eliminado')},
   epRes(){const e=SH.e,t=resumenEp(e);SH={k:'res',e,text:t};sheet('Resumen para el pediatra',`<pre class="res">${esc(t)}</pre><button class="btn" data-act="epShare">Compartir (Share)</button><button class="btn ghost" data-act="epCopy">Copiar</button><button class="btn ghost" data-act="epView" data-id="${e.id}">Volver al episodio</button>`)},
