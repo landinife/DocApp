@@ -179,7 +179,14 @@ h2{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;text-
 @media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
 .tpt{cursor:pointer}.tchart{flex:none;aspect-ratio:320/178;width:100%;height:auto;display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px}
 .res{white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5;background:var(--surface-2);border-radius:12px;padding:12px 14px;margin:0}
-.sum.ep{border:1.5px solid var(--warn)}
+.sum.ep{border:2px solid var(--ec,var(--line));background:var(--ef,var(--surface))}
+.sum.ep.t-late{--ec:var(--danger);--ef:var(--danger-soft)}
+.sum.ep.t-soon{--ec:var(--warn);--ef:var(--warn-soft)}
+.sum.ep.t-ok{--ec:var(--ok);--ef:var(--ok-soft)}
+.sum.ep.t-cold{--ec:var(--p-blue);--ef:color-mix(in srgb,var(--p-blue) 14%,var(--surface))}
+.ep-t{font-family:var(--font-display);font-size:44px;font-weight:700;line-height:1.05;color:var(--ec,var(--ink))}
+.ep-ago{font-family:var(--font-body);font-size:13px;font-weight:500;color:var(--muted)}
+.ep-next{font-weight:700;color:var(--ec,var(--ink))}
 .pill.cold{background:color-mix(in srgb,var(--p-blue) 16%,transparent);color:var(--p-blue)}
 </style>
 
@@ -946,11 +953,12 @@ function chart(e){
 }
 const ofrecerCierre=e=>{if(e.end)return false;const ts=epTemps(e),f=ts.filter(x=>+x.temp>=38).pop();return !!f&&Date.now()-f.t>=24*H&&ts.some(x=>x.t>f.t&&+x.temp<38)};
 function epCard(e){
-  const l=epLast(e),dia=Math.floor((sod(Date.now())-sod(e.start))/D)+1;
-  return `<div class="sum ep"><div><div class="label">Síntomas en curso · ${esc(P(e.who).name)}</div><div class="big">${esc(e.title)} · día ${dia}</div>
-    <div class="sub">${l?`Última medición ${whenTxt(l.t)}${l.temp!=null&&l.temp!==''?': <span class="pill ${tK(+l.temp)}">'+fT(l.temp)+'</span>':''}.`:'Sin mediciones todavía.'}${e.next?` Volver a medir ${e.next<Date.now()?'<b>ya</b> (tocaba '+whenTxt(e.next)+')':'a las '+whenTxt(e.next)}.`:''}</div></div>
-    ${alertNote(e)}${ofrecerCierre(e)?`<div class="note info"><span>Lleva 24 horas sin fiebre: ¿cerrar el episodio?</span><button data-act="epCloseId" data-id="${e.id}">Cerrar</button></div>`:''}
-    <div class="g2"><button class="btn" data-act="mdNew" data-id="${e.id}">Agregar medición</button><button class="btn ghost" data-act="epView" data-id="${e.id}">Ver episodio</button></div></div>`;
+  const lt=epTemps(e).slice(-1)[0],dia=Math.floor((sod(Date.now())-sod(e.start))/D)+1,k=lt?tK(+lt.temp):'';
+  return `<div class="sum ep ${k?'t-'+k:''}"><div><div class="label" style="color:var(--ec,var(--muted))">${esc(P(e.who).name)} · ${esc(e.title)} · día ${dia}</div>
+    ${lt?`<div class="ep-t">${fT(lt.temp)} <span class="ep-ago">Medido ${whenTxt(lt.t)}</span></div>`:'<div class="sub">Sin mediciones todavía.</div>'}
+    ${e.next?`<div class="ep-next">Volver a medir ${e.next<Date.now()?'<b>ya</b> (tocaba '+whenTxt(e.next)+')':'a las '+whenTxt(e.next)}</div>`:''}</div>
+    ${chart(e)}${alertNote(e)}${ofrecerCierre(e)?`<div class="note info"><span>Lleva 24 horas sin fiebre: ¿cerrar el episodio?</span><button data-act="epCloseId" data-id="${e.id}">Cerrar</button></div>`:''}
+    <button class="btn" data-act="mdNew" data-id="${e.id}">Agregar medición</button><button class="btn ghost" data-act="epView" data-id="${e.id}">Ver episodio</button></div>`;
 }
 const _vHoy=vHoy;
 vHoy=function(){if(DAYOFF)return _vHoy();const o=epOpen();return (o.length?o.map(epCard).join(''):`<button class="btn ghost" data-act="epNew">Registrar síntomas o fiebre</button>`)+_vHoy()};
